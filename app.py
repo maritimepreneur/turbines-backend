@@ -4,6 +4,7 @@ import os
 from routes.home_routes import home_bp
 from routes.user_routes import user_bp
 from database import db, init_db
+from flask_migrate import Migrate
 
 # Load environment variables
 load_dotenv()
@@ -25,6 +26,10 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize database
 init_db(app)
+
+# Migrate database
+migrate = Migrate(app, db)
+from models import *
 
 # Register blueprints
 app.register_blueprint(home_bp)
