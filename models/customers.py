@@ -1,34 +1,16 @@
 from database import db
-from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import relationship
 
-class Customers(db.Model):
+class Customer(db.Model):
     __tablename__ = "customers"
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50), nullable=False)
-    email = db.Column(db.String(100), nullable=False)
-    password_hash = db.Column(db.String(255), nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True)
 
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
+    name = Column(String, nullable=False)
 
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
-
-    invoice_id = db.Column(
-        db.Integer,
-        db.ForeignKey("invoice.id"),
-        nullable=False
-    )
-
-    requirements_id = db.Column(
-        db.Integer,
-        db.ForeignKey("requirements.id"),
-        nullable=False
-    )
-
-    partners_id = db.Column(
-        db.Integer,
-        db.ForeignKey("partners.id"),
-        nullable=False
-    )
+    users = relationship("User", back_populates="customer")
+    requirements = relationship("Requirement", back_populates="customer")
+    quotations = relationship("Quotation", back_populates="customer")
+    purchase_orders = relationship("Purchase_Order", back_populates="customer")
+    invoices = relationship("Invoice", back_populates="customer")
