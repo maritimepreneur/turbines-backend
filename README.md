@@ -66,3 +66,7 @@ DB_PASSWORD=your_password
 ```bash
 python3 app.py / python app.py
 ```
+
+```bash
+flask shell
+```
