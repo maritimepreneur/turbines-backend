@@ -2,7 +2,7 @@ from enum import Enum
 from sqlalchemy import Column, Integer, String, DateTime, UniqueConstraint, ForeignKey, Enum as SQLEnum
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-from database import db
+from app.database import db
 from werkzeug.security import generate_password_hash, check_password_hash
 
 class UserRole(Enum):
