@@ -4,20 +4,10 @@ from sqlalchemy.exc import SQLAlchemyError
 from typing import Optional, Dict, Any
 
 class AuthService:
-    """Service layer for authentication operations"""
     
     @staticmethod
     def authenticate_user(identifier: str, password: str) -> Optional[User]:
-        """
-        Authenticate user by username/email and password
-        
-        Args:
-            identifier: Username or email
-            password: Plain text password
-            
-        Returns:
-            User object if authentication successful, None otherwise
-        """
+
         try:
             # Try to find user by username or email
             user = User.query.filter(
@@ -40,15 +30,7 @@ class AuthService:
     
     @staticmethod
     def get_user_by_id(user_id: int) -> Optional[User]:
-        """
-        Get user by ID
-        
-        Args:
-            user_id: User ID
-            
-        Returns:
-            User object if found, None otherwise
-        """
+
         try:
             return User.query.get(user_id)
         except SQLAlchemyError as e:
@@ -57,15 +39,7 @@ class AuthService:
     
     @staticmethod
     def serialize_user(user: User) -> Dict[str, Any]:
-        """
-        Serialize user object to dictionary
-        
-        Args:
-            user: User object
-            
-        Returns:
-            Dictionary with user data (excluding sensitive info)
-        """
+
         return {
             "id": user.id,
             "username": user.username,
