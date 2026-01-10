@@ -11,6 +11,25 @@ from app.services.auth_service import AuthService
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 
+@auth_bp.route('/register', methods=['POST'])
+def register():
+    """
+    Input JSON yang diharapkan:
+    {
+        "username": "user123",
+        "email": "user@example.com",
+        "password": "password aman",
+        "confirm_password": "password aman",
+        "role": "USER"
+    }
+    """
+    if not request.is_json:
+        return jsonify({"success": False, "message": "Content-Type harus application/json"}), 400
+    
+    data = request.get_json()
+    result, status_code = AuthService.register_user(data)
+    return jsonify(result), status_code
+
 @auth_bp.route('/login', methods=['POST'])
 def login():
     if not request.is_json:
@@ -107,4 +126,3 @@ def validate_token():
             "role": claims.get("role")
         }
     }), 200
-
