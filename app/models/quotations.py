@@ -11,14 +11,16 @@ class Quotation(db.Model):
     document_name = Column(String, nullable=False)
     total_amount = Column(Numeric(14, 2), nullable=False)
     document_content = Column(String(255), nullable=False)
+    summary = Column(String, nullable=False)
+    offering_latter = Column(String, nullable=False)
 
     __table_args__ = (
         UniqueConstraint("document_number", name="uq_quotation_document_number"),
     )
 
-    customer_id = Column(
+    contact_id = Column(
         Integer,
-        ForeignKey("customers.id"),
+        ForeignKey("contacts.id"),
         nullable=True
     )
     partner_id = Column(
@@ -27,7 +29,8 @@ class Quotation(db.Model):
         nullable=True
     )
 
-    customer = relationship("Customer", back_populates="quotations")
+    contact = relationship("Contact", back_populates="quotations")
     partner = relationship("Partner", back_populates="quotations")
+    items = relationship("Item", back_populates="quotation")
 
     """ Disini buat dict kalau perlu """
