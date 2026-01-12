@@ -51,11 +51,8 @@ class User(db.Model):
     partner = relationship("Partner", back_populates="users")
 
     def set_password(self, password):
-        """ Hash and store password """
-        self.password_hash = generate_password_hash(password)
+        self.password_hash = generate_password_hash(password, method='pbkdf2:sha256')
 
     def check_password(self, password):
-        """ Check if password equals to stored hash """
         return check_password_hash(self.password_hash, password)
     
-    """ Disini buat dict kalau perlu """
