@@ -7,15 +7,11 @@ class Purchase_Order(db.Model):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
 
-    po_number = Column(Integer, nullable=False)
-    total_amount = Column(Numeric(14, 2), nullable=False)
-    attachment_name = Column(String(255), nullable=False)
-    attachment_path = Column(String(255), nullable=False)
-    attachment_type = Column(String)
-    attachment_size = Column(Integer)
+    number = Column(Integer, nullable=False)
+    attachments = Column(String, nullable=False)
 
     __table_args__ = (
-        UniqueConstraint("po_number", name="uq_purchase_order_po_number"),
+        UniqueConstraint("number", name="uq_purchase_order_number"),
     )
 
     partner_id = Column(
@@ -23,14 +19,15 @@ class Purchase_Order(db.Model):
         ForeignKey("partners.id"),
         nullable=False
     )
-    customer_id = Column(
+    contact_id = Column(
         Integer,
-        ForeignKey("customers.id"),
+        ForeignKey("contacts.id"),
         nullable=False
     )
 
     partner = relationship("Partner", back_populates="purchase_orders")
-    customer = relationship("Customer", back_populates="purchase_orders")
+    contact = relationship("Contact", back_populates="purchase_orders")
     invoices = relationship("Invoice", back_populates="purchase_order")
+    payments = relationship("Payment", back_populates="purchase_order")
 
     """ Disini buat dict kalau perlu """

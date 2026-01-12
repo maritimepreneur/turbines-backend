@@ -14,27 +14,19 @@ class PaymentType(Enum):
     CASHLESS = "Cashless"
     DIGITAL = "Digital/Electronic"
 
-class ProjectStage(Enum):
-    STAGE_1 = "New Lead"
-    STAGE_2 = "Introduction"
-    STAGE_3 = "Presentation"
-    STAGE_4 = "Proposal"
-    STAGE_5 = "Ready to Scale"
-    STAGE_6 = "Cancel"
-
-class Requirement(db.Model):
-    __tablename__ = "requirements"
+class Project(db.Model):
+    __tablename__ = "projects"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
 
-    project_name = Column(String, nullable=False)
-    project_location = Column(String, nullable=False)
-    project_type = Column(
+    name = Column(String, nullable=False)
+    location = Column(String, nullable=False)
+    type = Column(
         SQLEnum(ProjectType, name="project_type_enum"),
         default=ProjectType.TYPE_0,
         nullable=False
     )
-    project_duration = Column(String, nullable=False)
+    duration = Column(String, nullable=False)
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=True)
     payment_type = Column(
@@ -42,20 +34,10 @@ class Requirement(db.Model):
         default=PaymentType.CASH,
         nullable=False
     )
-    project_stage = Column(
-        SQLEnum(ProjectStage, name="project_stage_enum"),
-        default=ProjectStage.STAGE_1,
-        nullable=False
-    )
-    project_notes = Column(Text, nullable=True)
-    attachment_name = Column(String(255), nullable=False)
-    attachment_path = Column(String(255), nullable=False)
-    attachment_type = Column(String)
-    attachment_size = Column(Integer)
 
-    customer_id = Column(
+    contact_id = Column(
         Integer,
-        ForeignKey("customers.id"),
+        ForeignKey("contacts.id"),
         nullable=True
     )
     partner_id = Column(
@@ -64,7 +46,8 @@ class Requirement(db.Model):
         nullable=True
     )
 
-    customer = relationship("Customer", back_populates="requirements")
-    partner = relationship("Partner", back_populates="requirements")
+    customer = relationship("Contact", back_populates="projects")
+    partner = relationship("Partner", back_populates="projects")
+    stages = relationship("Stage", back_populates="project")
 
     """ Disini buat dict kalau perlu """
