@@ -1,5 +1,10 @@
+<<<<<<<< HEAD:app/models/invoices.py
 from database import db
 from sqlalchemy import Column, Integer, String, Numeric, Text, Date, DateTime, ForeignKey, UniqueConstraint
+========
+from app.database import db
+from sqlalchemy import Column, Integer, Numeric, Text, Date, DateTime, ForeignKey, UniqueConstraint
+>>>>>>>> b555cf52f10e667dc5684d4b41e152acd85ba334:app/models/invoice.py
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
