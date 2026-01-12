@@ -1,11 +1,6 @@
-<<<<<<< HEAD:models/partners.py
-from database import db
+from app.database import db
 from enum import Enum
 from sqlalchemy import Column, Integer, String, Enum as SQLEnum
-=======
-from app.database import db
-from sqlalchemy import Column, Integer, String
->>>>>>> b555cf52f10e667dc5684d4b41e152acd85ba334:app/models/partners.py
 from sqlalchemy.orm import relationship
 
 class CompanyType(Enum):

@@ -1,12 +1,8 @@
 from enum import Enum
 from sqlalchemy import Column, Integer, String, DateTime, UniqueConstraint, Enum as SQLEnum, ForeignKey
 from sqlalchemy.orm import relationship
-<<<<<<< HEAD:models/users.py
 from sqlalchemy.sql import func
-from database import db
-=======
 from app.database import db
->>>>>>> b555cf52f10e667dc5684d4b41e152acd85ba334:app/models/users.py
 from werkzeug.security import generate_password_hash, check_password_hash
 
 class UserRole(Enum):
@@ -49,10 +45,6 @@ class User(db.Model):
     partner = relationship("Partner", back_populates="users")
 
     def set_password(self, password):
-<<<<<<< HEAD:models/users.py
-        """ Hash and store password """
-=======
->>>>>>> b555cf52f10e667dc5684d4b41e152acd85ba334:app/models/users.py
         self.password_hash = generate_password_hash(password, method='pbkdf2:sha256')
 
     def check_password(self, password):
