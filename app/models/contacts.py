@@ -23,6 +23,6 @@ class Contact(db.Model):
     quotations = relationship("Quotation", back_populates="contact")
     purchase_orders = relationship("Purchase_Order", back_populates="contact")
     invoices = relationship("Invoice", back_populates="contact")
-    projects = relationship("Project", back_populates="customer")
+    projects = relationship("Project", back_populates="contact")
 
     """" Disini buat dict kalau perlu """

@@ -52,7 +52,7 @@ class Project(db.Model):
         nullable=True
     )
 
-    customer = relationship("Contact", back_populates="projects")
+    contact = relationship("Contact", back_populates="projects")
     partner = relationship("Partner", back_populates="projects")
     stages = relationship("Stage", back_populates="project")
     lead = relationship("Lead", back_populates="projects")

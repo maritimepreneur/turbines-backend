@@ -23,7 +23,7 @@ class BaseService:
         self.db.add(new_obj)
         self.db.commit()
         self.db.refresh(new_obj)
-        return response(200, "Action Success", new_obj)
+        return response(201, "Action Success", new_obj)
     
     def update(self, obj_id, data):
         obj = self._get_by_id(obj_id)

@@ -58,7 +58,7 @@ def login():
         }), 401
     
     additional_claims = {
-        "role": user.role.value,
+        "role": user.role.value if hasattr(user.role, "value") else user.role,
         "username": user.username
     }
     

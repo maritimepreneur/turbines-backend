@@ -1,10 +1,12 @@
 from flask import Flask
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
+from flask_restx import Api
 from .database import db
 from .config import Config
 from .routes import home_bp, user_bp
 from .routes.auth_routes import auth_bp
+from .routes.contact_routes import contact_ns
 
 migrate = Migrate()
 jwt = JWTManager()
@@ -60,5 +62,8 @@ def create_app():
             'success': False,
             'message': f'Invalid token: {error}'
     }, 401
+
+    api = Api(app)
+    api.add_namespace(contact_ns, path="/contacts")
 
     return app
