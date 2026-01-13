@@ -24,5 +24,6 @@ class Lead(db.Model):
 
     contact = relationship("Contact", back_populates="leads")
     partner = relationship("Partner", back_populates="leads")
+    projects = relationship("Project", back_populates="lead")
 
     """" Disini buat dict kalau perlu """

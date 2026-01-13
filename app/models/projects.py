@@ -34,6 +34,7 @@ class Project(db.Model):
         default=PaymentType.CASH,
         nullable=False
     )
+    description = Column(Text, nullable=False)
 
     contact_id = Column(
         Integer,
@@ -45,9 +46,15 @@ class Project(db.Model):
         ForeignKey("partners.id"),
         nullable=True
     )
+    lead_id = Column(
+        Integer,
+        ForeignKey("leads.id"),
+        nullable=True
+    )
 
-    customer = relationship("Contact", back_populates="projects")
+    contact = relationship("Contact", back_populates="projects")
     partner = relationship("Partner", back_populates="projects")
     stages = relationship("Stage", back_populates="project")
+    lead = relationship("Lead", back_populates="projects")
 
     """ Disini buat dict kalau perlu """
