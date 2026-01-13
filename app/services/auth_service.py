@@ -86,7 +86,6 @@ class AuthService:
             "username": user.username,
             "email": user.email,
             "role": user.role.value,
-            "customer_id": user.customer_id,
             "partner_id": user.partner_id,
             "created_at": user.created_at.isoformat() if user.created_at else None
         }
