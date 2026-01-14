@@ -4,10 +4,6 @@ from flask_jwt_extended import JWTManager
 from flask_restx import Api
 from .database import db
 from .config import Config
-from .routes import home_bp, user_bp
-from .routes.auth_routes import auth_bp
-from .routes.contact_routes import contact_ns
-from .routes.partner_routes import partner_ns
 
 migrate = Migrate()
 jwt = JWTManager()
@@ -21,11 +17,6 @@ def create_app():
     migrate.init_app(app, db)
     jwt.init_app(app)
 
-    # Register blueprints
-    app.register_blueprint(home_bp)
-    app.register_blueprint(user_bp)
-    app.register_blueprint(auth_bp)
-
     # JWT error handlers
     @jwt.expired_token_loader
     def expired_token_callback(jwt_header, jwt_payload):
@@ -36,9 +27,10 @@ def create_app():
     
     @jwt.invalid_token_loader
     def invalid_token_callback(error):
+        print(f"Invalid token error: {error}")
         return {
             'success': False,
-            'message': 'Invalid token'
+            'message': f'Invalid token: {error}'
         }, 401
     
     @jwt.unauthorized_loader
@@ -55,17 +47,33 @@ def create_app():
             'message': 'Token has been revoked'
         }, 401
 
+    authorizations = {
+        'Bearer Auth': {
+            'type': 'apiKey',
+            'in': 'header',
+            'name': 'Authorization',
+            'description': "JWT Authorization header using the Bearer scheme. Example: \"Bearer {token}\""
+        }
+    }
+    
+    api = Api(
+        app,
+        version='1.0',
+        title='Turbinz API',
+        description='API Documentation for Turbinz Application',
+        doc='/api/docs',
+        authorizations=authorizations,
+        security='Bearer Auth'
+    )
 
-    @jwt.invalid_token_loader
-    def invalid_token_callback(error):
-        print(f"Invalid token error: {error}")  # Debug log
-        return {
-            'success': False,
-            'message': f'Invalid token: {error}'
-    }, 401
+    # Import namespaces
+    from .routes import auth_ns, contact_ns, partner_ns, lead_ns
+    
+    # Register namespaces dengan prefix /api
+    api.add_namespace(auth_ns, path="/api/auth")
+    api.add_namespace(contact_ns, path="/api/contacts")
+    api.add_namespace(partner_ns, path="/api/partners")
+    api.add_namespace(lead_ns, path="/api/leads")
 
-    api = Api(app)
-    api.add_namespace(contact_ns, path="/contacts")
-    api.add_namespace(partner_ns, path="/partners")
 
     return app
