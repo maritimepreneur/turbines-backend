@@ -1,0 +1,53 @@
+from app.database import db
+from enum import Enum
+from sqlalchemy import Column, Integer, ForeignKey, Enum as SQLEnum
+from sqlalchemy.orm import relationship
+
+class ApprovalType(Enum):
+    PENDING = "Pending"
+    APPROVED = "Approved"
+    REJECTED = "Rejected"
+
+class Approval(db.Model):
+    __tablename__ = "approvals"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    type = Column(
+        SQLEnum(ApprovalType, name="approval_type_enum"),
+        nullable=False
+    )
+    code = Column(Integer, nullable=False)
+
+    quotation_id = Column(
+        Integer,
+        ForeignKey("quotations.id"),
+        nullable=True
+    )
+    po_id = Column(
+        Integer,
+        ForeignKey("purchase_orders.id"),
+        nullable=True
+    )
+    invoice_id = Column(
+        Integer,
+        ForeignKey("invoices.id"),
+        nullable=True
+    )
+    expense_id = Column(
+        Integer,
+        ForeignKey("expenses.id"),
+        nullable=True
+    )
+    lead_id = Column(
+        Integer,
+        ForeignKey("leads.id"),
+        nullable=True
+    )
+
+    quotation = relationship("Quotation")
+    purchase_order = relationship("Purchase_Order")
+    invoice = relationship("Invoice")
+    expense = relationship("Expense", back_populates="approvals")
+    lead = relationship("Lead")
+
+    """" Disini buat dict kalau perlu """
