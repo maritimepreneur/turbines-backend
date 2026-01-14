@@ -7,6 +7,7 @@ from .config import Config
 from .routes import home_bp, user_bp
 from .routes.auth_routes import auth_bp
 from .routes.contact_routes import contact_ns
+from .routes.partner_routes import partner_ns
 
 migrate = Migrate()
 jwt = JWTManager()
@@ -65,5 +66,6 @@ def create_app():
 
     api = Api(app)
     api.add_namespace(contact_ns, path="/contacts")
+    api.add_namespace(partner_ns, path="/partners")
 
     return app
