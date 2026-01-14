@@ -9,8 +9,8 @@ class ContactSchema(BaseSchema):
             "data": fields.Nested(namespace.model("Contact", {
                 "id": fields.Integer,
                 "name": fields.String,
-                "email": fields.String,
-                "phone_number": fields.String,
+                "emails": fields.List(fields.String),
+                "phone_numbers": fields.List(fields.String),
                 "company": fields.String,
             }))
         })
@@ -19,7 +19,7 @@ class ContactSchema(BaseSchema):
     def post_schema(cls, namespace: Model):
         return namespace.model("ContactPostResponse", {
             "name": fields.String(required=True),
-            "email": fields.String(required=True),
-            "phone_number": fields.String(required=True),
+            "emails": fields.List(fields.String, required=True),
+            "phone_numbers": fields.List(fields.String ,required=True),
             "company": fields.String,
         })

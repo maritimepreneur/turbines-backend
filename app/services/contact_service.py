@@ -14,6 +14,12 @@ class ContactService(BaseService):
     
     def create(self, contact_data):
         """" Register a new contact """
+        emails = contact_data.get("emails")
+        phones = contact_data.get("phone_numbers")
+
+        if not isinstance(emails, list) or not isinstance(phones, list):
+            return response(400, "emails and phone_numbers must be list")
+
         return super().create(contact_data)
     
     def get_contact_by_id(self, contact_id):
@@ -28,4 +34,13 @@ class ContactService(BaseService):
         contact = self._get_by_id(contact_id)
         if not contact:
             return response(404, contact_id)
-        return super().update(contact_id, updated_data)
+        
+        if "emails" in updated_data:
+            contact.emails = list(set(contact.emails + updated_data["emails"]))
+
+        if "phone_numbers" in updated_data:
+            contact.phone_numbers = list(set(contact.phone_numbers + updated_data["phone_numbers"]))
+
+        self.db.commit()
+        self.db.refresh(contact)
+        return response(200, "Action Success", contact)
