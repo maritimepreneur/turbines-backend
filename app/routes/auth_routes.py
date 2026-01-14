@@ -1,128 +1,52 @@
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import (
-    create_access_token,
-    create_refresh_token,
-    jwt_required,
-    get_jwt_identity,
-    get_jwt
-)
-from datetime import timedelta
+from flask_restx import Namespace, Resource
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
+from app.database import db
 from app.services.auth_service import AuthService
+from app.schemas.auth_schema import AuthSchema
 
-auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
+auth_ns = Namespace("auth", description="Authentication Management")
+auth_svc = AuthService(db.session)
 
-@auth_bp.route('/register', methods=['POST'])
-def register():
-    """
-    Input JSON yang diharapkan:
-    {
-        "username": "user123",
-        "email": "user@example.com",
-        "password": "password aman",
-        "confirm_password": "password aman",
-        "role": "USER"
-    }
-    """
-    if not request.is_json:
-        return jsonify({"success": False, "message": "Content-Type harus application/json"}), 400
-    
-    data = request.get_json()
-    result, status_code = AuthService.register_user(data)
-    return jsonify(result), status_code
+register_schema = AuthSchema.register_schema(auth_ns)
+login_schema = AuthSchema.login_schema(auth_ns)
+token_response_schema = AuthSchema.token_response_schema(auth_ns)
+user_response_schema = AuthSchema.user_response_schema(auth_ns)
+validate_response_schema = AuthSchema.validate_response_schema(auth_ns)
 
-@auth_bp.route('/login', methods=['POST'])
-def login():
-    if not request.is_json:
-        return jsonify({
-            "success": False,
-            "message": "Content-Type must be application/json"
-        }), 400
-    
-    data = request.get_json()
-    
-    identifier = data.get('identifier')
-    password = data.get('password')
-    
-    if not identifier or not password:
-        return jsonify({
-            "success": False,
-            "message": "identifier and password are required"
-        }), 400
-    
-    user = AuthService.authenticate_user(identifier, password)
-    
-    if not user:
-        return jsonify({
-            "success": False,
-            "message": "Invalid credentials"
-        }), 401
-    
-    additional_claims = {
-        "role": user.role.value if hasattr(user.role, "value") else user.role,
-        "username": user.username
-    }
-    
-    access_token = create_access_token(
-        identity=str(user.id),
-        additional_claims=additional_claims,
-        expires_delta=timedelta(hours=1)
-    )
-    
-    refresh_token = create_refresh_token(
-        identity=str(user.id),
-        additional_claims=additional_claims,
-        expires_delta=timedelta(days=30)
-    )
-    
-    return jsonify({
-        "success": True,
-        "message": "Login successful",
-        "data": {
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-            "user": AuthService.serialize_user(user)
-        }
-    }), 200
+@auth_ns.route("/register")
+class Register(Resource):
+    @auth_ns.expect(register_schema)
+    @auth_ns.marshal_with(user_response_schema)
+    def post(self):
+        """ Register a new user """
+        return auth_svc.register_user(auth_ns.payload)
 
+@auth_ns.route("/login")
+class Login(Resource):
+    @auth_ns.expect(login_schema)
+    @auth_ns.marshal_with(token_response_schema)
+    def post(self):
+        """ Login user """
+        return auth_svc.login_user(auth_ns.payload)
 
-@auth_bp.route('/refresh', methods=['POST'])
-@jwt_required(refresh=True)
-def refresh():
-    current_user_id = get_jwt_identity()
-    claims = get_jwt()
-    
-    additional_claims = {
-        "role": claims.get("role"),
-        "username": claims.get("username")
-    }
-    
-    access_token = create_access_token(
-        identity=current_user_id,
-        additional_claims=additional_claims,
-        expires_delta=timedelta(hours=1)
-    )
-    
-    return jsonify({
-        "success": True,
-        "message": "Token refreshed successfully",
-        "data": {
-            "access_token": access_token
-        }
-    }), 200
+@auth_ns.route("/refresh")
+class RefreshToken(Resource):
+    @jwt_required(refresh=True)
+    @auth_ns.doc(security="Bearer Auth")
+    @auth_ns.marshal_with(token_response_schema)
+    def post(self):
+        """ Refresh access token """
+        current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        return auth_svc.refresh_token(current_user_id, claims)
 
-
-@auth_bp.route('/validate', methods=['GET'])
-@jwt_required()
-def validate_token():
-    user_id = int(get_jwt_identity())
-    claims = get_jwt()
-
-    return jsonify({
-        "success": True,
-        "message": "Token is valid",
-        "data": {
-            "user_id": user_id,
-            "username": claims.get("username"),
-            "role": claims.get("role")
-        }
-    }), 200
+@auth_ns.route("/validate")
+class ValidateToken(Resource):
+    @jwt_required()
+    @auth_ns.doc(security="Bearer Auth")
+    @auth_ns.marshal_with(validate_response_schema)
+    def get(self):
+        """ Validate current token """
+        user_id = int(get_jwt_identity())
+        claims = get_jwt()
+        return auth_svc.validate_token(user_id, claims)
