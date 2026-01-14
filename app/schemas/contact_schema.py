@@ -1,5 +1,5 @@
 from flask_restx import fields, Model
-from app.schemas.base_service import BaseSchema
+from app.schemas.base_schema import BaseSchema
 
 class ContactSchema(BaseSchema):
     @classmethod
