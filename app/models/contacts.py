@@ -1,6 +1,7 @@
 from app.database import db
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import JSONB
 
 class Contact(db.Model):
     __tablename__ = "contacts"
@@ -8,8 +9,8 @@ class Contact(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
 
     name = Column(String, nullable=False)
-    email = Column(String, nullable=False)
-    phone_number = Column(String, nullable=False)
+    emails = Column(JSONB, nullable=False, default=list, server_default="[]")
+    phone_numbers = Column(JSONB, nullable=False, default=list, server_default="[]")
     company = Column(String, nullable=False)
 
     partner_id = Column(

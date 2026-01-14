@@ -23,7 +23,7 @@ class Partner(db.Model):
 
     name = Column(String, nullable=False)
     initials = Column(String, nullable=False)
-    industrials = Column(String, nullable=False)
+    industry = Column(String, nullable=False)
     company_type = Column(
         SQLEnum(CompanyType, name="company_type_enum"),
         default=CompanyType.TYPE_0,

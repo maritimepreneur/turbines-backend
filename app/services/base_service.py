@@ -39,7 +39,7 @@ class BaseService:
     def delete(self, obj_id:int):
         obj = self._get_by_id(obj_id)
         if not obj:
-            raise response(404, f"{self.model.__name__} not found")
+            return response(404, f"{self.model.__name__} not found")
         
         self.db.delete(obj)
         self.db.commit()
