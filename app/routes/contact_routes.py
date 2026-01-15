@@ -20,6 +20,8 @@ class ContactList(Resource):
         """ Get all contacts """
         return contact_svc.get_all_contacts()
 
+@contact_ns.route("/create")
+class ContactCreate(Resource):
     @jwt_required()
     @role_required("ADMIN", "BIZDEV", "FINANCE")
     @contact_ns.doc(security="Bearer Auth")
