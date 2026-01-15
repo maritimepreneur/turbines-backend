@@ -70,3 +70,15 @@ python3 app.py / python app.py
 ```bash
 flask shell
 ```
+
+### 7. Migration
+
+```bash
+flask db upgrade
+```
+
+or
+
+```bash
+flask db migrate -m ""
+```
