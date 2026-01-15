@@ -20,6 +20,8 @@ class PartnerList(Resource):
         """ Get all partners """
         return partner_svc.get_all_partners()
     
+@partner_ns.route("/create")
+class PartnerCreate(Resource):
     @jwt_required()
     @role_required("ADMIN", "BIZDEV", "FINANCE")
     @partner_ns.doc(security="Bearer Auth")
