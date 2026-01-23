@@ -10,4 +10,3 @@ from .invoices import Invoice
 from .payments import Payment
 from .expenses import Expense
 from .approvals import Approval, ApprovalType
-from .stages import Stage

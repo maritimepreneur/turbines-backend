@@ -28,6 +28,11 @@ class Quotation(db.Model):
         ForeignKey("partners.id"),
         nullable=True
     )
+    project_id = Column(
+        Integer,
+        ForeignKey("projects.id"),
+        nullable=True
+    )
 
     contact = relationship("Contact", back_populates="quotations")
     partner = relationship("Partner", back_populates="quotations")

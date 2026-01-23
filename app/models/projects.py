@@ -4,15 +4,22 @@ from sqlalchemy import Column, Integer, String, Text, Date, ForeignKey, Enum as 
 from sqlalchemy.orm import relationship
 
 class ProjectType(Enum):
-    TYPE_0 = "Other"
-    TYPE_1 = "BECdex Certification"
-    TYPE_2 = "CBEc Training Course"
-    TYPE_3 = "Maritime Professional"
+    OTHER = "Other"
+    BECDEX = "BECdex Certification"
+    CBEC = "CBEc Training Course"
+    MARITIME = "Maritime Professional"
 
 class PaymentType(Enum):
     CASH = "Cash"
     CASHLESS = "Cashless"
     DIGITAL = "Digital/Electronic"
+
+class Stages(Enum):
+    CONCEPT = "Concept"
+    PLANNING = "Planning"
+    EXECUTION = "Execution"
+    MONITORING = "Monitoring"
+    CLOSING = "Closing"
 
 class Project(db.Model):
     __tablename__ = "projects"
@@ -23,7 +30,7 @@ class Project(db.Model):
     location = Column(String, nullable=False)
     type = Column(
         SQLEnum(ProjectType, name="project_type_enum"),
-        default=ProjectType.TYPE_0,
+        default=ProjectType.OTHER,
         nullable=False
     )
     duration = Column(String, nullable=False)
@@ -35,6 +42,11 @@ class Project(db.Model):
         nullable=False
     )
     description = Column(Text, nullable=False)
+    current_stages = Column(
+        SQLEnum(Stages, name="project_stages_enum"),
+        default=Stages.CONCEPT,
+        nullable=False
+    )
 
     contact_id = Column(
         Integer,
@@ -54,7 +66,7 @@ class Project(db.Model):
 
     contact = relationship("Contact", back_populates="projects")
     partner = relationship("Partner", back_populates="projects")
-    stages = relationship("Stage", back_populates="project")
     lead = relationship("Lead", back_populates="projects")
+    item = relationship("Item", back_populates="projects")
 
     """ Disini buat dict kalau perlu """

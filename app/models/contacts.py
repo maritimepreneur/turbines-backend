@@ -1,5 +1,5 @@
 from app.database import db
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSONB
 
@@ -17,6 +17,16 @@ class Contact(db.Model):
         Integer,
         ForeignKey("partners.id"),
         nullable=True
+    )
+    lead_id = Column(
+        Integer,
+        ForeignKey("leads.id"),
+        nullable=True
+    )
+
+    __table_args__ = (
+        UniqueConstraint("emails", name="uq_contact_emails"),
+        UniqueConstraint("phone_numbers", name="uq_contact_phone_numbers"),
     )
 
     partner = relationship("Partner", back_populates="contacts")

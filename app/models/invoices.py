@@ -42,6 +42,11 @@ class Invoice(db.Model):
         ForeignKey("purchase_orders.id"),
         nullable=True
     )
+    payment_id = Column(
+        Integer,
+        ForeignKey("payments.id"),
+        nullable=True
+    )
 
     contact= relationship("Contact", back_populates="invoices")
     partner= relationship("Partner", back_populates="invoices")

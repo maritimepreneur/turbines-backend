@@ -17,12 +17,17 @@ class Purchase_Order(db.Model):
     partner_id = Column(
         Integer,
         ForeignKey("partners.id"),
-        nullable=False
+        nullable=True
     )
     contact_id = Column(
         Integer,
         ForeignKey("contacts.id"),
-        nullable=False
+        nullable=True
+    )
+    quotation_id = Column(
+        Integer,
+        ForeignKey("quotations.id"),
+        nullable=True
     )
 
     partner = relationship("Partner", back_populates="purchase_orders")

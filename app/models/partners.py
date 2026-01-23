@@ -2,14 +2,15 @@ from app.database import db
 from enum import Enum
 from sqlalchemy import Column, Integer, String, Enum as SQLEnum
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import JSONB
 
 class CompanyType(Enum):
-    TYPE_0 = "Other"
-    TYPE_1 = "Goverment"
-    TYPE_2 = "Private"
-    TYPE_3 = "State Owned"
-    TYPE_4 = "Public"
-    TYPE_5 = "Non-Profit"
+    OTHER = "Other"
+    GOVERMENT = "Goverment"
+    PRIVATE = "Private"
+    STATEOWNED = "State Owned"
+    PUBLIC = "Public"
+    NONPROFIT = "Non-Profit"
 
 class PartnerType(Enum):
     VENDOR = "Vendor"
@@ -26,15 +27,15 @@ class Partner(db.Model):
     industry = Column(String, nullable=False)
     company_type = Column(
         SQLEnum(CompanyType, name="company_type_enum"),
-        default=CompanyType.TYPE_0,
+        default=CompanyType.OTHER,
         nullable=False
     )
     partner_type = Column(
         SQLEnum(PartnerType, name="partner_type_enum"),
         nullable=False
     )
-    service = Column(String, nullable=True)
-    goods = Column(String, nullable=True)
+    service = Column(JSONB, nullable=True, default=list, server_default="[]")
+    goods = Column(JSONB, nullable=True, default=list, server_default="[]")
 
     users = relationship("User", back_populates="partner")
     contacts = relationship("Contact", back_populates="partner")
