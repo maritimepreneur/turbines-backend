@@ -7,8 +7,12 @@ from app.utils import role_required
 
 partner_ns = Namespace("partners", description="Partner Management")
 partner_svc = PartnerService(db.session)
+
 partner_response_schema = PartnerSchema.get_schema(partner_ns)
 partner_post_schema = PartnerSchema.post_schema(partner_ns)
+
+partner_filter_schema = PartnerSchema.filter_schema(partner_ns)
+partner_filter_response = PartnerSchema.filter_response_schema(partner_ns)
 
 @partner_ns.route("/")
 class PartnerList(Resource):
@@ -17,9 +21,20 @@ class PartnerList(Resource):
     @partner_ns.doc(security="Bearer Auth")
     @partner_ns.marshal_list_with(partner_response_schema)
     def get(self):
-        """ Get all partners """
+        """ Get all partners (Standard) """
         return partner_svc.get_all_partners()
     
+    @jwt_required()
+    @role_required("ADMIN", "BIZDEV", "FINANCE", "OPERATION", "USER")
+    @partner_ns.doc(security="Bearer Auth")
+    @partner_ns.expect(partner_filter_schema)
+    @partner_ns.response(200, "Success", partner_filter_response)
+    def post(self):
+        """ Search and Filter Partners with Pagination """
+        return partner_svc.get_partner_list_filter(partner_ns.payload)
+    
+@partner_ns.route("/create")
+class PartnerCreate(Resource):
     @jwt_required()
     @role_required("ADMIN", "BIZDEV", "FINANCE")
     @partner_ns.doc(security="Bearer Auth")

@@ -1,8 +1,9 @@
 from app.database import db
 from enum import Enum
-from sqlalchemy import Column, Integer, String, Enum as SQLEnum
+from sqlalchemy import Column, Integer, String, Enum as SQLEnum, DateTime
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.sql import func
 
 class CompanyType(Enum):
     OTHER = "Other"
@@ -36,6 +37,8 @@ class Partner(db.Model):
     )
     service = Column(JSONB, nullable=True, default=list, server_default="[]")
     goods = Column(JSONB, nullable=True, default=list, server_default="[]")
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     users = relationship("User", back_populates="partner")
     contacts = relationship("Contact", back_populates="partner")
@@ -45,4 +48,18 @@ class Partner(db.Model):
     purchase_orders = relationship("Purchase_Order", back_populates="partner")
     invoices = relationship("Invoice", back_populates="partner")
 
-    """ Disini buat dict kalau perlu """
+    def to_dict(self):
+        """ Helper untuk mengubah object SQLAlchemy menjadi Dictionary """
+        return {
+            "id": self.id,
+            "name": self.name,
+            "initials": self.initials,
+            "industry": self.industry,
+            "company_type": self.company_type.value if self.company_type else None,
+            "partner_type": self.partner_type.value if self.partner_type else None,
+            "service": self.service,
+            "goods": self.goods,
+            "created_at": self.created_at.isoformat() if self.created_at else None
+        }
+
+""" Disini buat dict kalau perlu """

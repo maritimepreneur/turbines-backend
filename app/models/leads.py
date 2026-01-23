@@ -54,9 +54,23 @@ class Lead(db.Model):
         nullable=True
     )
 
+    # Relationships
     contact = relationship("Contact", back_populates="leads")
     partner = relationship("Partner", back_populates="leads")
     projects = relationship("Project", back_populates="lead")
     documents = relationship("Document", back_populates="lead")
 
-    """" Disini buat dict kalau perlu """
+    def to_dict(self):
+        """ Helper to convert SQLAlchemy object to Dictionary """
+        return {
+            "id": self.id,
+            "name": self.name,
+            "period": self.period.isoformat() if self.period else None,
+            "description": self.description,
+            "contact_id": self.contact_id,
+            "partner_id": self.partner_id,
+            # Flatten nested data for display if needed
+            "contact_name": self.contact.name if self.contact else None,
+            "company": self.contact.company if self.contact else None, # Company comes from Contact
+            "partner_name": self.partner.name if self.partner else None
+        }
