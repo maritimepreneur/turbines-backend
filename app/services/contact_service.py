@@ -3,6 +3,7 @@ from sqlalchemy import or_, desc, asc, cast, String
 from app.models.contacts import Contact
 from app.services.base_service import BaseService
 from app.utils import response
+from app.models.partners import Partner
 
 class ContactService(BaseService):
     def __init__(self, db: Session):
@@ -15,8 +16,18 @@ class ContactService(BaseService):
     
     def create(self, contact_data):
         """" Register a new contact """
+        partner_id = contact_data.get("partner_id")
         emails = contact_data.get("emails")
         phones = contact_data.get("phone_numbers")
+
+        if partner_id in (0, "0"):
+            partner_id = None
+            contact_data["partner_id"] = None
+
+        if partner_id is not None:
+            partner = self.db.get(Partner, partner_id)
+            if not partner:
+                return response(404, "Partner not found")
 
         if not isinstance(emails, list) or not isinstance(phones, list):
             return response(400, "emails and phone_numbers must be list")

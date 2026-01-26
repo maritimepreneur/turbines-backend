@@ -38,16 +38,10 @@ class Approval(db.Model):
         ForeignKey("expenses.id"),
         nullable=True
     )
-    lead_id = Column(
-        Integer,
-        ForeignKey("leads.id"),
-        nullable=True
-    )
 
-    quotation = relationship("Quotation")
-    purchase_order = relationship("Purchase_Order")
-    invoice = relationship("Invoice")
+    quotations = relationship("Quotation", back_populates="approvals")
+    purchase_orders = relationship("Purchase_Order", back_populates="approvals")
+    invoices = relationship("Invoice", back_populates="approvals")
     expense = relationship("Expense", back_populates="approvals")
-    lead = relationship("Lead")
 
     """" Disini buat dict kalau perlu """
