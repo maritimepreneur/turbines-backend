@@ -38,27 +38,12 @@ class Lead(db.Model):
         ForeignKey("partners.id"),
         nullable=True
     )
-    project_id = Column(
-        Integer,
-        ForeignKey("projects.id"),
-        nullable=True
-    )
-    quotation_id = Column(
-        Integer,
-        ForeignKey("quotations.id"),
-        nullable=True,
-    )
-    po_id = Column(
-        Integer,
-        ForeignKey("purchase_orders.id"),
-        nullable=True
-    )
 
     # Relationships
     contact = relationship("Contact", back_populates="leads")
     partner = relationship("Partner", back_populates="leads")
     projects = relationship("Project", back_populates="lead")
-    documents = relationship("Document", back_populates="lead")
+    quotations = relationship("Quotation", back_populates="lead")
 
     def to_dict(self):
         """ Helper to convert SQLAlchemy object to Dictionary """

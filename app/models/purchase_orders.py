@@ -1,5 +1,5 @@
 from app.database import db
-from sqlalchemy import Column, Integer, String, Numeric, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, String, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 class Purchase_Order(db.Model):
@@ -30,9 +30,10 @@ class Purchase_Order(db.Model):
         nullable=True
     )
 
+    quotation = relationship("Quotation", back_populates="purchase_orders")
     partner = relationship("Partner", back_populates="purchase_orders")
     contact = relationship("Contact", back_populates="purchase_orders")
     invoices = relationship("Invoice", back_populates="purchase_order")
-    payments = relationship("Payment", back_populates="purchase_order")
+    approvals = relationship("Approval", back_populates="purchase_orders")
 
     """ Disini buat dict kalau perlu """

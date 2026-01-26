@@ -42,15 +42,12 @@ class Invoice(db.Model):
         ForeignKey("purchase_orders.id"),
         nullable=True
     )
-    payment_id = Column(
-        Integer,
-        ForeignKey("payments.id"),
-        nullable=True
-    )
 
-    contact= relationship("Contact", back_populates="invoices")
-    partner= relationship("Partner", back_populates="invoices")
+    contact = relationship("Contact", back_populates="invoices")
+    partner = relationship("Partner", back_populates="invoices")
     purchase_order = relationship("Purchase_Order", back_populates="invoices")
     payments = relationship("Payment", back_populates="invoice")
+    approvals = relationship("Approval", back_populates="invoices")
+    projects = relationship("Project", back_populates="invoices")
 
     """" Disini buat dict kalau perlu """

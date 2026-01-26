@@ -47,7 +47,6 @@ class Project(db.Model):
         default=Stages.CONCEPT,
         nullable=False
     )
-
     contact_id = Column(
         Integer,
         ForeignKey("contacts.id"),
@@ -58,6 +57,11 @@ class Project(db.Model):
         ForeignKey("partners.id"),
         nullable=True
     )
+    invoice_id = Column(
+        Integer,
+        ForeignKey("invoices.id"),
+        nullable=True
+    )
     lead_id = Column(
         Integer,
         ForeignKey("leads.id"),
@@ -66,7 +70,8 @@ class Project(db.Model):
 
     contact = relationship("Contact", back_populates="projects")
     partner = relationship("Partner", back_populates="projects")
+    invoices = relationship("Invoice", back_populates="projects")
+    documents = relationship("Document", back_populates="project", cascade="all, delete-orphan")
     lead = relationship("Lead", back_populates="projects")
-    item = relationship("Item", back_populates="projects")
 
     """ Disini buat dict kalau perlu """

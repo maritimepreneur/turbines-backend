@@ -1,4 +1,4 @@
-from database import db
+from app.database import db
 from sqlalchemy import Column, Integer, String, ForeignKey, Enum as SQLEnum
 from enum import Enum
 from sqlalchemy.orm import relationship
@@ -26,20 +26,13 @@ class Document(db.Model):
         nullable=False
     )
 
-    partner_id = Column(
+    project_id = Column(
         Integer,
-        ForeignKey("partners.id"),
+        ForeignKey("projects.id"),
         nullable=True
     )
-    contact_id = Column(
-        Integer,
-        ForeignKey("contacts.id"),
-        nullable=True
-    ),
-    lead_id = Column(
-        Integer,
-        ForeignKey("leads.id"),
-        nullable=True
-    )
+
+    # Relationships
+    project = relationship("Project", back_populates="documents")
 
     """ Disini buat dict kalau perlu """

@@ -16,13 +16,7 @@ class Payment(db.Model):
         ForeignKey("invoices.id"),
         nullable=True
     )
-    po_id = Column(
-        Integer,
-        ForeignKey("purchase_orders.id"),
-        nullable=True
-    )
 
     invoice = relationship("Invoice", back_populates="payments")
-    purchase_order = relationship("Purchase_Order", back_populates="payments")
 
     """" Disini buat dict kalau perlu """

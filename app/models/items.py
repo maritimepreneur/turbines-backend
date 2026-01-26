@@ -25,16 +25,6 @@ class Item(db.Model):
         ForeignKey("quotations.id"),
         nullable=True
     )
-    contact_id = Column(
-        Integer,
-        ForeignKey("contacts.id"),
-        nullable=True
-    )
-    partner_id = Column(
-        Integer,
-        ForeignKey("partners.id"),
-        nullable=True
-    )
 
     expense = relationship("Expense", back_populates="items")
     quotation = relationship("Quotation", back_populates="items")

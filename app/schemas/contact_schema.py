@@ -13,7 +13,7 @@ class ContactSchema(BaseSchema):
                 "emails": fields.List(fields.String),
                 "phone_numbers": fields.List(fields.String),
                 "company": fields.String,
-                "partner_id": fields.Integer,
+                "partner_id": fields.Integer(required=False, allow_null=True),
                 "created_at": fields.String(description="ISO 8601 Date")
             }))
         })
@@ -26,7 +26,7 @@ class ContactSchema(BaseSchema):
             "emails": fields.List(fields.String, required=True),
             "phone_numbers": fields.List(fields.String ,required=True),
             "company": fields.String,
-            "partner_id": fields.Integer(description="Optional Partner ID")
+            "partner_id": fields.Integer(description="Optional Partner ID", required=False, allow_null=True)
         })
 
     @classmethod

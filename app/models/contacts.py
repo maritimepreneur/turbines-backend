@@ -21,11 +21,6 @@ class Contact(db.Model):
         ForeignKey("partners.id"),
         nullable=True
     )
-    lead_id = Column(
-        Integer,
-        ForeignKey("leads.id"),
-        nullable=True
-    )
 
     __table_args__ = (
         UniqueConstraint("emails", name="uq_contact_emails"),

@@ -40,7 +40,6 @@ class Partner(db.Model):
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    users = relationship("User", back_populates="partner")
     contacts = relationship("Contact", back_populates="partner")
     leads = relationship("Lead", back_populates="partner")
     projects = relationship("Project", back_populates="partner")
