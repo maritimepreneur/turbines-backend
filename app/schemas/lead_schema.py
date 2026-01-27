@@ -53,6 +53,7 @@ class LeadSchema(BaseSchema):
             
             "contacts": fields.List(fields.String, description="Filter by Contact Names (Partial Match)"),
             "partners": fields.List(fields.String, description="Filter by Partner Names (Partial Match)"),
+            "stages": fields.List(fields.String, description="Filter by Stages (NEW, INTRODUCTION, etc)"), 
         })
 
     @classmethod

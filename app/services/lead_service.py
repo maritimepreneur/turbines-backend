@@ -4,6 +4,7 @@ from app.services.base_service import BaseService
 from app.models.leads import Lead
 from app.models.contacts import Contact
 from app.models.partners import Partner
+from app.models.leads import Stages
 from app.utils import response
 
 class LeadService(BaseService):
@@ -37,6 +38,7 @@ class LeadService(BaseService):
             period_end = payload.get('period_end')
             contacts_filter = payload.get('contacts', [])
             partners_filter = payload.get('partners', [])
+            stages_filter = payload.get('stages', []) 
 
             query = self.db.query(Lead)\
                 .outerjoin(Contact, Lead.contact_id == Contact.id)\
@@ -63,6 +65,10 @@ class LeadService(BaseService):
                 conditions = [Partner.name.ilike(f"%{p}%") for p in partners_filter if p]
                 if conditions:
                     query = query.filter(or_(*conditions))
+            if stages_filter:
+                conditions = [Stages[s.upper()] for s in stages_filter if s.upper() in [stage.name for stage in Stages]]
+                if conditions:
+                    query = query.filter(Lead.current_stages.in_(conditions))
 
             if hasattr(Lead, sort_by):
                 sort_column = getattr(Lead, sort_by)
