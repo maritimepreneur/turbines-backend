@@ -9,7 +9,7 @@
 
 ```bash
 git clone <repository-url>
-cd flask-project
+cd flask-project 
 ```
 
 ### 2. Buat Virtual Environment
@@ -18,7 +18,7 @@ cd flask-project
 python3 -m venv venv
 source venv/bin/activate  # Linux/Mac
 # atau
-venv\Scripts\activate     # Windows
+venv\Scripts\activate     # Window
 ```
 
 ### 3. Install Dependencies
