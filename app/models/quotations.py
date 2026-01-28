@@ -28,9 +28,17 @@ class Quotation(db.Model):
         ForeignKey("partners.id"),
         nullable=True
     )
+    lead_id = Column(
+        Integer,
+        ForeignKey("leads.id"),
+        nullable=True
+    )
 
+    lead = relationship("Lead", back_populates="quotations")
     contact = relationship("Contact", back_populates="quotations")
     partner = relationship("Partner", back_populates="quotations")
+    purchase_orders = relationship("Purchase_Order", back_populates="quotation")
+    approvals = relationship("Approval", back_populates="quotations")
     items = relationship("Item", back_populates="quotation")
 
     """ Disini buat dict kalau perlu """

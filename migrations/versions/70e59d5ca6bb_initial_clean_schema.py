@@ -1,8 +1,8 @@
 """initial clean schema
 
-Revision ID: 47582bf1cc2c
+Revision ID: 70e59d5ca6bb
 Revises: 
-Create Date: 2026-01-14 14:49:55.284945
+Create Date: 2026-01-23 15:55:47.883727
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '47582bf1cc2c'
+revision = '70e59d5ca6bb'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -32,20 +32,11 @@ def upgrade():
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('initials', sa.String(), nullable=False),
     sa.Column('industry', sa.String(), nullable=False),
-    sa.Column('company_type', sa.Enum('TYPE_0', 'TYPE_1', 'TYPE_2', 'TYPE_3', 'TYPE_4', 'TYPE_5', name='company_type_enum'), nullable=False),
+    sa.Column('company_type', sa.Enum('OTHER', 'GOVERMENT', 'PRIVATE', 'STATEOWNED', 'PUBLIC', 'NONPROFIT', name='company_type_enum'), nullable=False),
     sa.Column('partner_type', sa.Enum('VENDOR', 'CLIENT', 'BOTH', name='partner_type_enum'), nullable=False),
-    sa.Column('service', sa.String(), nullable=True),
-    sa.Column('goods', sa.String(), nullable=True),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_table('contacts',
-    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('name', sa.String(), nullable=False),
-    sa.Column('emails', postgresql.JSONB(astext_type=sa.Text()), server_default='[]', nullable=False),
-    sa.Column('phone_numbers', postgresql.JSONB(astext_type=sa.Text()), server_default='[]', nullable=False),
-    sa.Column('company', sa.String(), nullable=False),
-    sa.Column('partner_id', sa.Integer(), nullable=True),
-    sa.ForeignKeyConstraint(['partner_id'], ['partners.id'], ),
+    sa.Column('service', postgresql.JSONB(astext_type=sa.Text()), server_default='[]', nullable=True),
+    sa.Column('goods', postgresql.JSONB(astext_type=sa.Text()), server_default='[]', nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('users',
@@ -55,33 +46,35 @@ def upgrade():
     sa.Column('password_hash', sa.String(), nullable=False),
     sa.Column('role', sa.Enum('ADMIN', 'USER', 'BIZDEV', 'FINANCE', 'OPERATION', name='user_role_enum'), nullable=False),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
-    sa.Column('partner_id', sa.Integer(), nullable=True),
-    sa.ForeignKeyConstraint(['partner_id'], ['partners.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email', name='uq_user_email'),
     sa.UniqueConstraint('username', name='uq_user_username')
+    )
+    op.create_table('contacts',
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('name', sa.String(), nullable=False),
+    sa.Column('emails', postgresql.JSONB(astext_type=sa.Text()), server_default='[]', nullable=False),
+    sa.Column('phone_numbers', postgresql.JSONB(astext_type=sa.Text()), server_default='[]', nullable=False),
+    sa.Column('company', sa.String(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+    sa.Column('partner_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['partner_id'], ['partners.id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('emails', name='uq_contact_emails'),
+    sa.UniqueConstraint('phone_numbers', name='uq_contact_phone_numbers')
     )
     op.create_table('leads',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('period', sa.DATE(), nullable=False),
     sa.Column('description', sa.Text(), nullable=False),
+    sa.Column('attachments', postgresql.JSONB(astext_type=sa.Text()), server_default='[]', nullable=False),
+    sa.Column('current_stages', sa.Enum('NEW', 'INTRODUCTION', 'PRESENTATION', 'QUOTATION', 'FU', 'MOU', 'EXECUTION', name='lead_stages_enum'), nullable=False),
     sa.Column('contact_id', sa.Integer(), nullable=True),
     sa.Column('partner_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['contact_id'], ['contacts.id'], ),
     sa.ForeignKeyConstraint(['partner_id'], ['partners.id'], ),
     sa.PrimaryKeyConstraint('id')
-    )
-    op.create_table('purchase_orders',
-    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('number', sa.Integer(), nullable=False),
-    sa.Column('attachments', sa.String(), nullable=False),
-    sa.Column('partner_id', sa.Integer(), nullable=False),
-    sa.Column('contact_id', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['contact_id'], ['contacts.id'], ),
-    sa.ForeignKeyConstraint(['partner_id'], ['partners.id'], ),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('number', name='uq_purchase_order_number')
     )
     op.create_table('quotations',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
@@ -93,10 +86,40 @@ def upgrade():
     sa.Column('offering_latter', sa.String(), nullable=False),
     sa.Column('contact_id', sa.Integer(), nullable=True),
     sa.Column('partner_id', sa.Integer(), nullable=True),
+    sa.Column('lead_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['contact_id'], ['contacts.id'], ),
+    sa.ForeignKeyConstraint(['lead_id'], ['leads.id'], ),
     sa.ForeignKeyConstraint(['partner_id'], ['partners.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('document_number', name='uq_quotation_document_number')
+    )
+    op.create_table('items',
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('name', sa.String(), nullable=False),
+    sa.Column('cost', sa.Numeric(precision=14, scale=2), nullable=False),
+    sa.Column('amount', sa.Numeric(precision=14, scale=2), nullable=False),
+    sa.Column('billed_amount', sa.Numeric(precision=14, scale=2), nullable=False),
+    sa.Column('type', sa.String(), nullable=False),
+    sa.Column('amount_type', sa.String(), nullable=False),
+    sa.Column('attachments', postgresql.JSONB(astext_type=sa.Text()), server_default='[]', nullable=False),
+    sa.Column('expense_id', sa.Integer(), nullable=True),
+    sa.Column('quotation_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['expense_id'], ['expenses.id'], ),
+    sa.ForeignKeyConstraint(['quotation_id'], ['quotations.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('purchase_orders',
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('number', sa.Integer(), nullable=False),
+    sa.Column('attachments', sa.String(), nullable=False),
+    sa.Column('partner_id', sa.Integer(), nullable=True),
+    sa.Column('contact_id', sa.Integer(), nullable=True),
+    sa.Column('quotation_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['contact_id'], ['contacts.id'], ),
+    sa.ForeignKeyConstraint(['partner_id'], ['partners.id'], ),
+    sa.ForeignKeyConstraint(['quotation_id'], ['quotations.id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('number', name='uq_purchase_order_number')
     )
     op.create_table('invoices',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
@@ -123,38 +146,6 @@ def upgrade():
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('number', name='uq_invoice_number')
     )
-    op.create_table('items',
-    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('name', sa.String(), nullable=False),
-    sa.Column('cost', sa.Numeric(precision=14, scale=2), nullable=False),
-    sa.Column('amount', sa.Numeric(precision=14, scale=2), nullable=False),
-    sa.Column('billed_amount', sa.Numeric(precision=14, scale=2), nullable=False),
-    sa.Column('type', sa.String(), nullable=False),
-    sa.Column('amount_type', sa.String(), nullable=False),
-    sa.Column('expense_id', sa.Integer(), nullable=True),
-    sa.Column('quotation_id', sa.Integer(), nullable=True),
-    sa.ForeignKeyConstraint(['expense_id'], ['expenses.id'], ),
-    sa.ForeignKeyConstraint(['quotation_id'], ['quotations.id'], ),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_table('projects',
-    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('name', sa.String(), nullable=False),
-    sa.Column('location', sa.String(), nullable=False),
-    sa.Column('type', sa.Enum('TYPE_0', 'TYPE_1', 'TYPE_2', 'TYPE_3', name='project_type_enum'), nullable=False),
-    sa.Column('duration', sa.String(), nullable=False),
-    sa.Column('start_date', sa.Date(), nullable=False),
-    sa.Column('end_date', sa.Date(), nullable=True),
-    sa.Column('payment_type', sa.Enum('CASH', 'CASHLESS', 'DIGITAL', name='payment_type_enum'), nullable=False),
-    sa.Column('description', sa.Text(), nullable=False),
-    sa.Column('contact_id', sa.Integer(), nullable=True),
-    sa.Column('partner_id', sa.Integer(), nullable=True),
-    sa.Column('lead_id', sa.Integer(), nullable=True),
-    sa.ForeignKeyConstraint(['contact_id'], ['contacts.id'], ),
-    sa.ForeignKeyConstraint(['lead_id'], ['leads.id'], ),
-    sa.ForeignKeyConstraint(['partner_id'], ['partners.id'], ),
-    sa.PrimaryKeyConstraint('id')
-    )
     op.create_table('approvals',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('type', sa.Enum('PENDING', 'APPROVED', 'REJECTED', name='approval_type_enum'), nullable=False),
@@ -163,10 +154,8 @@ def upgrade():
     sa.Column('po_id', sa.Integer(), nullable=True),
     sa.Column('invoice_id', sa.Integer(), nullable=True),
     sa.Column('expense_id', sa.Integer(), nullable=True),
-    sa.Column('lead_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['expense_id'], ['expenses.id'], ),
     sa.ForeignKeyConstraint(['invoice_id'], ['invoices.id'], ),
-    sa.ForeignKeyConstraint(['lead_id'], ['leads.id'], ),
     sa.ForeignKeyConstraint(['po_id'], ['purchase_orders.id'], ),
     sa.ForeignKeyConstraint(['quotation_id'], ['quotations.id'], ),
     sa.PrimaryKeyConstraint('id')
@@ -178,21 +167,37 @@ def upgrade():
     sa.Column('notes', sa.Text(), nullable=False),
     sa.Column('attachments', sa.String(), nullable=False),
     sa.Column('invoice_id', sa.Integer(), nullable=True),
-    sa.Column('po_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['invoice_id'], ['invoices.id'], ),
-    sa.ForeignKeyConstraint(['po_id'], ['purchase_orders.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_table('stages',
+    op.create_table('projects',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('name', sa.String(), nullable=False),
-    sa.Column('attachments', sa.String(), nullable=False),
+    sa.Column('location', sa.String(), nullable=False),
+    sa.Column('type', sa.Enum('OTHER', 'BECDEX', 'CBEC', 'MARITIME', name='project_type_enum'), nullable=False),
+    sa.Column('duration', sa.String(), nullable=False),
+    sa.Column('start_date', sa.Date(), nullable=False),
+    sa.Column('end_date', sa.Date(), nullable=True),
+    sa.Column('payment_type', sa.Enum('CASH', 'CASHLESS', 'DIGITAL', name='payment_type_enum'), nullable=False),
+    sa.Column('description', sa.Text(), nullable=False),
+    sa.Column('current_stages', sa.Enum('CONCEPT', 'PLANNING', 'EXECUTION', 'MONITORING', 'CLOSING', name='project_stages_enum'), nullable=False),
+    sa.Column('contact_id', sa.Integer(), nullable=True),
+    sa.Column('partner_id', sa.Integer(), nullable=True),
+    sa.Column('invoice_id', sa.Integer(), nullable=True),
+    sa.Column('lead_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['contact_id'], ['contacts.id'], ),
+    sa.ForeignKeyConstraint(['invoice_id'], ['invoices.id'], ),
+    sa.ForeignKeyConstraint(['lead_id'], ['leads.id'], ),
+    sa.ForeignKeyConstraint(['partner_id'], ['partners.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('documents',
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('number', sa.Integer(), nullable=False),
+    sa.Column('name', sa.String(), nullable=False),
+    sa.Column('document_type', sa.Enum('OTHER', 'RECOMENDATION', 'PO', 'INVOICE', 'MOU', 'TAX', 'REPORT', 'CERTIFICATE', 'AGGREMENT', name='documen_type_enum'), nullable=False),
     sa.Column('project_id', sa.Integer(), nullable=True),
-    sa.Column('quotation_id', sa.Integer(), nullable=True),
-    sa.Column('po_id', sa.Integer(), nullable=True),
-    sa.ForeignKeyConstraint(['po_id'], ['purchase_orders.id'], ),
     sa.ForeignKeyConstraint(['project_id'], ['projects.id'], ),
-    sa.ForeignKeyConstraint(['quotation_id'], ['quotations.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     # ### end Alembic commands ###
@@ -200,17 +205,17 @@ def upgrade():
 
 def downgrade():
     # ### commands auto generated by Alembic - please adjust! ###
-    op.drop_table('stages')
+    op.drop_table('documents')
+    op.drop_table('projects')
     op.drop_table('payments')
     op.drop_table('approvals')
-    op.drop_table('projects')
-    op.drop_table('items')
     op.drop_table('invoices')
-    op.drop_table('quotations')
     op.drop_table('purchase_orders')
+    op.drop_table('items')
+    op.drop_table('quotations')
     op.drop_table('leads')
-    op.drop_table('users')
     op.drop_table('contacts')
+    op.drop_table('users')
     op.drop_table('partners')
     op.drop_table('expenses')
     # ### end Alembic commands ###

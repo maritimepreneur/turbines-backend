@@ -30,7 +30,6 @@ class AuthSchema(BaseSchema):
             "username": fields.String,
             "email": fields.String,
             "role": fields.String,
-            "partner_id": fields.Integer,
             "created_at": fields.String
         })
         
@@ -47,7 +46,6 @@ class AuthSchema(BaseSchema):
             "username": fields.String,
             "email": fields.String,
             "role": fields.String,
-            "partner_id": fields.Integer,
             "created_at": fields.String
         })
         
