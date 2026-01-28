@@ -54,6 +54,7 @@ class Lead(db.Model):
             "description": self.description,
             "contact_id": self.contact_id,
             "partner_id": self.partner_id,
+            "current_stages": self.current_stages.name if self.current_stages else None,  
             # Flatten nested data for display if needed
             "contact_name": self.contact.name if self.contact else None,
             "company": self.contact.company if self.contact else None, # Company comes from Contact

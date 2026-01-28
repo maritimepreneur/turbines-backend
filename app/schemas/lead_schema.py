@@ -4,7 +4,7 @@ from app.schemas.base_schema import BaseSchema
 class LeadSchema(BaseSchema):
     @classmethod
     def get_schema(cls, namespace: Model):
-        """ Schema for Lead Details """
+        """Schema for Lead Details"""
         return namespace.model("LeadResponse", {
             **BaseSchema.get_schema(namespace),
             "data": fields.Nested(namespace.model("Lead", {
@@ -23,23 +23,23 @@ class LeadSchema(BaseSchema):
                     "id": fields.Integer,
                     "name": fields.String,
                 }), allow_null=True),
-            }))
-        })
+            }, ordered=True))
+        }, ordered=True)
     
     @classmethod
     def post_schema(cls, namespace: Model):
-        """ Schema for Create/Update Lead """
+        """Schema for Create/Update Lead"""
         return namespace.model("LeadPostRequest", {
             "name": fields.String(required=True),
             "period": fields.Date(required=True),
             "description": fields.String(required=True),
             "contact_id": fields.Integer(required=False),
             "partner_id": fields.Integer(required=False),
-        })
+        }, ordered=True)
 
     @classmethod
     def filter_schema(cls, namespace: Model):
-        """ Schema for Payload Request Search & Filter Lead """
+        """Schema for Payload Request Search & Filter Lead"""
         return namespace.model("LeadFilterRequest", {
             "page_size": fields.Integer(required=True, default=25),
             "page_number": fields.Integer(required=True, default=1),
@@ -53,11 +53,12 @@ class LeadSchema(BaseSchema):
             
             "contacts": fields.List(fields.String, description="Filter by Contact Names (Partial Match)"),
             "partners": fields.List(fields.String, description="Filter by Partner Names (Partial Match)"),
-        })
+            "stages": fields.List(fields.String, description="Filter by Stages (NEW, INTRODUCTION, etc)"), 
+        }, ordered=True)
 
     @classmethod
     def filter_response_schema(cls, namespace: Model):
-        """ Schema for Output Response Filter (List + Pagination) """
+        """Schema for Output Response Filter (List + Pagination)"""
         
         lead_item_model = namespace.model("LeadFilterItem", {
             "id": fields.Integer,
@@ -67,36 +68,60 @@ class LeadSchema(BaseSchema):
             "contact_name": fields.String,
             "company": fields.String,
             "partner_name": fields.String
-        })
+        }, ordered=True)
 
         pagination_model = namespace.model("LeadPaginationInfo", {
             "current_page": fields.Integer,
             "page_size": fields.Integer,
             "total_pages": fields.Integer,
             "total_items": fields.Integer
-        })
+        }, ordered=True)
 
         filter_data_model = namespace.model("LeadFilterData", {
             "list": fields.List(fields.Nested(lead_item_model)),
             "pagination": fields.Nested(pagination_model)
-        })
+        }, ordered=True)
 
         return namespace.model("LeadFilterResponse", {
             "message": fields.String(default="Success"),
             "code": fields.Integer(default=200),
             "status": fields.String(default="success"),
             "data": fields.Nested(filter_data_model)
-        })
+        }, ordered=True)
 
     @classmethod
     def dropdown_list_schema(cls, namespace: Model):
-        """ Schema for Dropdown List """
+        """Schema for Dropdown List"""
         dropdown_item = namespace.model("DropdownItem", {
             "id": fields.Integer,
             "name": fields.String
-        })
+        }, ordered=True)
 
         return namespace.model("DropdownListResponse", {
             **BaseSchema.get_schema(namespace),
             "data": fields.List(fields.Nested(dropdown_item))
-        })
+        }, ordered=True)
+    
+    @classmethod
+    def stage_update_schema(cls, namespace: Model):
+        """Schema for updating lead stage"""
+        return namespace.model("LeadStageUpdate", {
+            "stage": fields.String(
+                required=True,
+                description="NEW, INTRODUCTION, PRESENTATION, QUOTATION, FU, MOU, EXECUTION"
+            )
+        }, ordered=True)
+
+    @classmethod
+    def pipeline_summary_schema(cls, namespace: Model):
+        """Schema for pipeline summary response"""
+        pipeline_item = namespace.model("PipelineItem", {
+            "stage": fields.String,
+            "label": fields.String,
+            "count": fields.Integer
+        }, ordered=True)
+        
+        return namespace.model("PipelineSummaryResponse", {
+            **BaseSchema.get_schema(namespace),
+            "data": fields.List(fields.Nested(pipeline_item))
+        }, ordered=True)
