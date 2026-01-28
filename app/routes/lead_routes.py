@@ -13,6 +13,8 @@ lead_post_schema = LeadSchema.post_schema(lead_ns)
 lead_filter_schema = LeadSchema.filter_schema(lead_ns)
 lead_filter_response = LeadSchema.filter_response_schema(lead_ns)
 lead_dropdown_schema = LeadSchema.dropdown_list_schema(lead_ns)
+lead_stage_update_schema = LeadSchema.stage_update_schema(lead_ns)
+lead_pipeline_schema = LeadSchema.pipeline_summary_schema(lead_ns)
 
 @lead_ns.route("/contact-list")
 class LeadContactList(Resource):
@@ -34,16 +36,29 @@ class LeadPartnerList(Resource):
         """ Get list of partners (ID & Name only) for dropdown """
         return lead_svc.get_partner_list_dropdown()
 
-@lead_ns.route("/")
-class LeadList(Resource):
+@lead_ns.route("/pipeline-summary")
+class LeadPipelineSummary(Resource):
     @jwt_required()
     @role_required("ADMIN", "BIZDEV", "FINANCE", "OPERATION", "USER")
     @lead_ns.doc(security="Bearer Auth")
-    @lead_ns.marshal_list_with(lead_response_schema)
+    @lead_ns.marshal_with(lead_pipeline_schema)
     def get(self):
-        """ Get all leads (Standard) """
-        return lead_svc.get_all_leads()
-    
+        """Get lead counts per stage for pipeline view"""
+        return lead_svc.get_pipeline_summary()
+
+@lead_ns.route("/<int:id>/stage")
+class LeadStageUpdate(Resource):
+    @jwt_required()
+    @role_required("ADMIN", "BIZDEV", "FINANCE")
+    @lead_ns.doc(security="Bearer Auth")
+    @lead_ns.expect(lead_stage_update_schema)
+    @lead_ns.marshal_with(lead_response_schema)
+    def patch(self, id):
+        """Update lead stage only"""
+        return lead_svc.update_lead_stage(id, lead_ns.payload['stage'])
+
+@lead_ns.route("/")
+class LeadList(Resource):    
     @jwt_required()
     @role_required("ADMIN", "BIZDEV", "FINANCE", "OPERATION", "USER")
     @lead_ns.doc(security="Bearer Auth")

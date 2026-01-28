@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, desc, asc
+from sqlalchemy import or_, desc, asc, func
 from app.services.base_service import BaseService
 from app.models.leads import Lead
 from app.models.contacts import Contact
@@ -51,7 +51,6 @@ class LeadService(BaseService):
                         Contact.company.ilike(f"%{search_query}%")
                     )
                 )
-
 
             if period_start and period_end:
                 query = query.filter(Lead.period.between(period_start, period_end))
@@ -127,3 +126,51 @@ class LeadService(BaseService):
             return response(200, "Success", result)
         except Exception as e:
             return response(500, f"Error fetching partner list: {str(e)}")
+
+    def get_pipeline_summary(self):
+        """Get count of leads per stage for pipeline view"""
+        try:
+            results = self.db.query(
+                Lead.current_stages,
+                func.count(Lead.id).label('count')
+            ).group_by(Lead.current_stages).all()
+            
+            summary = {stage.name: 0 for stage in Stages}
+            
+            for stage, count in results:
+                summary[stage.name] = count
+            
+            pipeline = [
+                {
+                    "stage": stage.name,
+                    "label": stage.value,
+                    "count": summary[stage.name]
+                }
+                for stage in Stages
+            ]
+            
+            return response(200, "Success", pipeline)
+        except Exception as e:
+            return response(500, f"Error fetching pipeline summary: {str(e)}")
+
+    def update_lead_stage(self, lead_id: int, new_stage: str):
+        """Update lead stage"""
+        try:
+            from app.models.leads import Stages
+            
+            # Validate stage
+            if new_stage.upper() not in [s.name for s in Stages]:
+                return response(400, f"Invalid stage. Valid stages: {[s.name for s in Stages]}")
+            
+            lead = self._get_by_id(lead_id)
+            if not lead:
+                return response(404, "Lead not found")
+            
+            lead.current_stages = Stages[new_stage.upper()]
+            self.db.commit()
+            self.db.refresh(lead)
+            
+            return response(200, "Stage updated successfully", lead)
+        except Exception as e:
+            self.db.rollback()
+            return response(500, f"Error updating lead stage: {str(e)}")
