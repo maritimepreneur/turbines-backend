@@ -36,7 +36,7 @@ class LeadPartnerList(Resource):
         """ Get list of partners (ID & Name only) for dropdown """
         return lead_svc.get_partner_list_dropdown()
 
-@lead_ns.route("/pipeline-summary")
+@lead_ns.route("/summary")
 class LeadPipelineSummary(Resource):
     @jwt_required()
     @role_required("ADMIN", "BIZDEV", "FINANCE", "OPERATION", "USER")
