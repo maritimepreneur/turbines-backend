@@ -13,6 +13,7 @@ class DocumentType(Enum):
     REPORT = "Report"
     CERTIFICATE = "Certificate"
     AGGREMENT = "Agreement"
+    QUOTATION = "QUOTATION"
 
 class Document(db.Model):
     __tablename__ = "documents"
@@ -31,8 +32,15 @@ class Document(db.Model):
         ForeignKey("projects.id"),
         nullable=True
     )
+    quotation_id = Column(
+        Integer,
+        ForeignKey("quotations.id"),
+        nullable=True
+    )
 
     # Relationships
     project = relationship("Project", back_populates="documents")
+    quotation = relationship("Quotation", back_populates="documents")
+
 
     """ Disini buat dict kalau perlu """
