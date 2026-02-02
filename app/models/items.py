@@ -1,6 +1,7 @@
 from app.database import db
 from sqlalchemy import Column, Integer, String, Numeric, ForeignKey
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import JSONB
 
 class Item(db.Model):
     __tablename__ = "items"
@@ -12,6 +13,7 @@ class Item(db.Model):
     billed_amount = Column(Numeric(14, 2), nullable=False)
     type = Column(String, nullable=False)
     amount_type = Column(String, nullable=False)
+    attachments = Column(JSONB, nullable=False, default=list, server_default="[]")
 
     expense_id = Column(
         Integer,

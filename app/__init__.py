@@ -4,6 +4,7 @@ from flask_jwt_extended import JWTManager
 from flask_restx import Api
 from .database import db
 from .config import Config
+from flask_cors import CORS
 
 migrate = Migrate()
 jwt = JWTManager()
@@ -11,6 +12,13 @@ jwt = JWTManager()
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+
+    CORS(
+        app,
+        resources={r"/api/*": {"origins": "*"}},  
+        allow_headers=["Content-Type", "Authorization"],
+        methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+    )
 
     # Initialize extensions
     db.init_app(app)

@@ -36,17 +36,10 @@ class User(db.Model):
         UniqueConstraint("email", name="uq_user_email"),
     )
 
-    partner_id = Column(
-        Integer,
-        ForeignKey("partners.id"),
-        nullable=True
-    )
-
-    partner = relationship("Partner", back_populates="users")
-
     def set_password(self, password):
         self.password_hash = generate_password_hash(password, method='pbkdf2:sha256')
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
     
+    employee = relationship("Employee", back_populates="user", uselist=False)

@@ -160,6 +160,5 @@ class AuthService(BaseService):
             "username": user.username,
             "email": user.email,
             "role": user.role.value if hasattr(user.role, "value") else user.role,
-            "partner_id": user.partner_id,
             "created_at": user.created_at.isoformat() if user.created_at else None
         }
