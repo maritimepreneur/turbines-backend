@@ -17,4 +17,4 @@ from .candidates import Candidate
 from .requirements import Requirement
 from .cv_trackers import CV_Tracker
 from .leaves import Leave
-from .attendances import Attendance, AttendanceStatus
+from .attendances import Attendance
