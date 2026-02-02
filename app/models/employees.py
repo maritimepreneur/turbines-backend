@@ -79,3 +79,4 @@ class Employee(db.Model):
 
     user = relationship("User", back_populates="employee")
     schedules = relationship("Schedule", back_populates="employee")
+    attendances = relationship("Attendance", back_populates="employee")
