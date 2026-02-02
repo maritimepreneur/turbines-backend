@@ -75,13 +75,14 @@ def create_app():
     )
 
     # Import namespaces
-    from .routes import auth_ns, contact_ns, partner_ns, lead_ns
+    from .routes import auth_ns, contact_ns, partner_ns, lead_ns, attendance_ns
     
     # Register namespaces dengan prefix /api
     api.add_namespace(auth_ns, path="/api/auth")
     api.add_namespace(contact_ns, path="/api/contacts")
     api.add_namespace(partner_ns, path="/api/partners")
     api.add_namespace(lead_ns, path="/api/leads")
+    api.add_namespace(attendance_ns, path="/api/attendances")
 
 
     return app

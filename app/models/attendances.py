@@ -22,3 +22,14 @@ class Attendance(db.Model):
     )
 
     employee = relationship("Employee", back_populates="attendances")
+
+    def to_dict(self):
+        """Helper to convert SQLAlchemy object to Dictionary"""
+        return {
+            "id": self.id,
+            "date": self.date.isoformat() if self.date else None,
+            "clock_in": self.clock_in if self.clock_in else {},
+            "clock_out": self.clock_out if self.clock_out else {},
+            "checked": self.checked,
+            "employee_id": self.employee_id,
+        }
