@@ -10,7 +10,7 @@ class PartnerSchema(BaseSchema):
                 "id": fields.Integer,
                 "name": fields.String,
                 "initials": fields.String,
-                "industrials": fields.String(attribute="industry"), # Mapping ke field model 'industry'
+                "industry": fields.String(attribute="industry"), # Mapping ke field model 'industry'
                 "company_type": fields.String(
                     attribute=lambda x: x.company_type.value if x and x.company_type else None
                 ),
