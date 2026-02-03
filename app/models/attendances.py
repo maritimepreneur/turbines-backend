@@ -32,4 +32,5 @@ class Attendance(db.Model):
             "clock_out": self.clock_out if self.clock_out else {},
             "checked": self.checked,
             "employee_id": self.employee_id,
+            "employee_name": self.employee.full_name if self.employee else None  # ← pastiin ini ada
         }
