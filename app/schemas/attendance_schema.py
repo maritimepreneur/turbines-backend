@@ -39,3 +39,58 @@ class AttendanceSchema(BaseSchema):
                 "attendance": fields.Raw(allow_null=True)
             }))
         })
+
+    # --- NEW: Filter & Search Schema ---
+    @classmethod
+    def filter_schema(cls, namespace: Model):
+        """Schema for Payload Search & Filter Attendance"""
+        return namespace.model("AttendanceFilterRequest", {
+            # Pagination
+            "page_size": fields.Integer(required=True, default=10, description="Items per page"),
+            "page_number": fields.Integer(required=True, default=1, description="Current page number"),
+            
+            # Search by Employee Name
+            "search": fields.String(description="Search by Employee Name"),
+            
+            # Filters
+            "checked": fields.Boolean(description="Filter by Checked status (true/false)"),
+            "start_date": fields.String(description="Filter Start Date (YYYY-MM-DD)"),
+            "end_date": fields.String(description="Filter End Date (YYYY-MM-DD)"),
+            
+            # Sorting
+            "sort_order": fields.String(default="DESC", description="ASC or DESC based on Date")
+        })
+
+    @classmethod
+    def filter_response_schema(cls, namespace: Model):
+        """Schema for Output Response Filter (List + Pagination)"""
+        
+        # Model Item per baris (attendance detail + nama employee)
+        attendance_item = namespace.model("AttendanceFilterItem", {
+            "id": fields.Integer,
+            "date": fields.String,
+            "clock_in": fields.Raw,
+            "clock_out": fields.Raw,
+            "checked": fields.Boolean,
+            "employee_id": fields.Integer,
+            "employee_name": fields.String(description="Name of the employee"), # Field tambahan hasil Join
+        })
+
+        # Model Pagination Info
+        pagination_model = namespace.model("AttendancePaginationInfo", {
+            "current_page": fields.Integer,
+            "page_size": fields.Integer,
+            "total_pages": fields.Integer,
+            "total_items": fields.Integer
+        })
+
+        # Model Data Wrapper
+        return namespace.model("AttendanceFilterResponse", {
+            "message": fields.String(default="Success"),
+            "code": fields.Integer(default=200),
+            "status": fields.String(default="success"),
+            "data": fields.Nested(namespace.model("AttendanceFilterData", {
+                "list": fields.List(fields.Nested(attendance_item)),
+                "pagination": fields.Nested(pagination_model)
+            }))
+        })

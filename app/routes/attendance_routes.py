@@ -8,10 +8,29 @@ from app.utils import role_required
 attendance_ns = Namespace("attendances", description="Attendance Management")
 attendance_svc = AttendanceService(db.session)
 
+# Init Schemas
 attendance_response_schema = AttendanceSchema.get_schema(attendance_ns)
 clock_schema = AttendanceSchema.clock_schema(attendance_ns)
 today_status_schema = AttendanceSchema.today_status_schema(attendance_ns)
 
+# New Filter Schemas
+attendance_filter_schema = AttendanceSchema.filter_schema(attendance_ns)
+attendance_filter_response = AttendanceSchema.filter_response_schema(attendance_ns)
+
+# --- NEW: Endpoint Search & Filter ---
+@attendance_ns.route("/")
+class AttendanceList(Resource):
+    @jwt_required()
+    @role_required("ADMIN", "HR", "OPERATION") 
+    @attendance_ns.doc(security="Bearer Auth")
+    @attendance_ns.expect(attendance_filter_schema)
+    @attendance_ns.response(200, "Success", attendance_filter_response)
+    def post(self):
+        """Search and Filter Attendances (Calendar & Status)"""
+        return attendance_svc.get_attendance_list_filter(attendance_ns.payload)
+
+
+# --- EXISTING ROUTES ---
 @attendance_ns.route("/clock-in/<int:employee_id>")
 class ClockIn(Resource):
     @jwt_required()
