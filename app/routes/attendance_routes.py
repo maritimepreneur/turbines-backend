@@ -1,5 +1,5 @@
 from flask_restx import Namespace, Resource
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.database import db
 from app.services.attendance_service import AttendanceService
 from app.schemas.attendance_schema import AttendanceSchema
@@ -13,11 +13,10 @@ attendance_response_schema = AttendanceSchema.get_schema(attendance_ns)
 clock_schema = AttendanceSchema.clock_schema(attendance_ns)
 today_status_schema = AttendanceSchema.today_status_schema(attendance_ns)
 
-# New Filter Schemas
+# Filter Schemas
 attendance_filter_schema = AttendanceSchema.filter_schema(attendance_ns)
 attendance_filter_response = AttendanceSchema.filter_response_schema(attendance_ns)
 
-# --- NEW: Endpoint Search & Filter ---
 @attendance_ns.route("/")
 class AttendanceList(Resource):
     @jwt_required()
@@ -29,39 +28,40 @@ class AttendanceList(Resource):
         """Search and Filter Attendances (Calendar & Status)"""
         return attendance_svc.get_attendance_list_filter(attendance_ns.payload)
 
-
-# --- EXISTING ROUTES ---
-@attendance_ns.route("/clock-in/<int:employee_id>")
+@attendance_ns.route("/clock-in")
 class ClockIn(Resource):
     @jwt_required()
     @role_required("ADMIN", "HR", "USER")
     @attendance_ns.doc(security="Bearer Auth")
     @attendance_ns.expect(clock_schema)
     @attendance_ns.marshal_with(attendance_response_schema)
-    def post(self, employee_id):
-        """Clock in for employee"""
-        return attendance_svc.clock_in(employee_id, attendance_ns.payload or {})
+    def post(self):
+        """Clock in - employee diambil dari token JWT"""
+        user_id = get_jwt_identity()
+        return attendance_svc.clock_in(user_id, attendance_ns.payload or {})
 
-@attendance_ns.route("/clock-out/<int:employee_id>")
+@attendance_ns.route("/clock-out")
 class ClockOut(Resource):
     @jwt_required()
     @role_required("ADMIN", "HR", "USER")
     @attendance_ns.doc(security="Bearer Auth")
     @attendance_ns.expect(clock_schema)
     @attendance_ns.marshal_with(attendance_response_schema)
-    def post(self, employee_id):
-        """Clock out for employee"""
-        return attendance_svc.clock_out(employee_id, attendance_ns.payload or {})
+    def post(self):
+        """Clock out - employee diambil dari token JWT"""
+        user_id = get_jwt_identity()
+        return attendance_svc.clock_out(user_id, attendance_ns.payload or {})
 
-@attendance_ns.route("/status/<int:employee_id>")
+@attendance_ns.route("/status")
 class TodayStatus(Resource):
     @jwt_required()
     @role_required("ADMIN", "HR", "USER")
     @attendance_ns.doc(security="Bearer Auth")
     @attendance_ns.marshal_with(today_status_schema)
-    def get(self, employee_id):
-        """Get attendance status for today"""
-        return attendance_svc.get_today_status(employee_id)
+    def get(self):
+        """Get attendance status hari ini - employee diambil dari token JWT"""
+        user_id = get_jwt_identity()
+        return attendance_svc.get_today_status(user_id)
 
 @attendance_ns.route("/<int:id>")
 class AttendanceDetail(Resource):
