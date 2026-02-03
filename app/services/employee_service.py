@@ -1,34 +1,34 @@
 from sqlalchemy.orm import Session
-from app.models.profiles import Profile
+from app.models.employees import Employee
 from app.services.base_service import BaseService
 from app.utils import response
 
 
-class ProfileService(BaseService):
+class EmployeeService(BaseService):
     def __init__(self, db: Session):
-        super().__init__(db, Profile).__annotations__
+        super().__init__(db, Employee)
 
-    def create(self, profile_data):
-        """ Create Profile """
-        return super().create(profile_data)
+    def create(self, employee_data):
+        """ Create employee """
+        return super().create(employee_data)
 
-    def get_profile_by_id(self, profile_id):
-        """ Get Profile by ID """
-        profile = self._get_by_id(profile_id)
-        if not profile:
-            return response(404, "Profile not found", None)
-        return response(200, "Success", profile)
+    def get_employee_by_id(self, employee_id):
+        """ Get employee by ID """
+        employee = self._get_by_id(employee_id)
+        if not employee:
+            return response(404, "employee not found", None)
+        return response(200, "Success", employee)
 
-    def update_profile_by_id(self, profile_id, updated_data):
-        """ Update Profile """
-        profile = self._get_by_id(profile_id)
-        if not profile:
-            return response(404, "Profile not found", None)
-        return super().update(profile_id, updated_data)
+    def update_employee_by_id(self, employee_id, updated_data):
+        """ Update employee """
+        employee = self._get_by_id(employee_id)
+        if not employee:
+            return response(404, "employee not found", None)
+        return super().update(employee_id, updated_data)
 
-    def delete_profile_by_id(self, profile_id):
-        """ Delete Profile """
-        profile = self._get_by_id(profile_id)
-        if not profile:
-            return response(404, "Profile not found", None)
-        return super().delete(profile_id)
+    def delete_employee_by_id(self, employee_id):
+        """ Delete employee """
+        employee = self._get_by_id(employee_id)
+        if not employee:
+            return response(404, "employee not found", None)
+        return super().delete(employee_id)
