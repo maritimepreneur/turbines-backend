@@ -1,0 +1,91 @@
+from flask_restx import Namespace, Resource
+from flask_jwt_extended import jwt_required
+from app.database import db
+from app.services.attendance_service import AttendanceService
+from app.schemas.attendance_schema import AttendanceSchema
+from app.utils import role_required
+
+attendance_ns = Namespace("attendances", description="Attendance Management")
+attendance_svc = AttendanceService(db.session)
+
+# Init Schemas
+attendance_response_schema = AttendanceSchema.get_schema(attendance_ns)
+clock_schema = AttendanceSchema.clock_schema(attendance_ns)
+today_status_schema = AttendanceSchema.today_status_schema(attendance_ns)
+
+# New Filter Schemas
+attendance_filter_schema = AttendanceSchema.filter_schema(attendance_ns)
+attendance_filter_response = AttendanceSchema.filter_response_schema(attendance_ns)
+
+# --- NEW: Endpoint Search & Filter ---
+@attendance_ns.route("/")
+class AttendanceList(Resource):
+    @jwt_required()
+    @role_required("ADMIN", "HR", "OPERATION") 
+    @attendance_ns.doc(security="Bearer Auth")
+    @attendance_ns.expect(attendance_filter_schema)
+    @attendance_ns.response(200, "Success", attendance_filter_response)
+    def post(self):
+        """Search and Filter Attendances (Calendar & Status)"""
+        return attendance_svc.get_attendance_list_filter(attendance_ns.payload)
+
+
+# --- EXISTING ROUTES ---
+@attendance_ns.route("/clock-in/<int:employee_id>")
+class ClockIn(Resource):
+    @jwt_required()
+    @role_required("ADMIN", "HR", "USER")
+    @attendance_ns.doc(security="Bearer Auth")
+    @attendance_ns.expect(clock_schema)
+    @attendance_ns.marshal_with(attendance_response_schema)
+    def post(self, employee_id):
+        """Clock in for employee"""
+        return attendance_svc.clock_in(employee_id, attendance_ns.payload or {})
+
+@attendance_ns.route("/clock-out/<int:employee_id>")
+class ClockOut(Resource):
+    @jwt_required()
+    @role_required("ADMIN", "HR", "USER")
+    @attendance_ns.doc(security="Bearer Auth")
+    @attendance_ns.expect(clock_schema)
+    @attendance_ns.marshal_with(attendance_response_schema)
+    def post(self, employee_id):
+        """Clock out for employee"""
+        return attendance_svc.clock_out(employee_id, attendance_ns.payload or {})
+
+@attendance_ns.route("/status/<int:employee_id>")
+class TodayStatus(Resource):
+    @jwt_required()
+    @role_required("ADMIN", "HR", "USER")
+    @attendance_ns.doc(security="Bearer Auth")
+    @attendance_ns.marshal_with(today_status_schema)
+    def get(self, employee_id):
+        """Get attendance status for today"""
+        return attendance_svc.get_today_status(employee_id)
+
+@attendance_ns.route("/<int:id>")
+class AttendanceDetail(Resource):
+    @jwt_required()
+    @role_required("ADMIN", "HR", "OPERATION")
+    @attendance_ns.doc(security="Bearer Auth")
+    @attendance_ns.marshal_with(attendance_response_schema)
+    def get(self, id):
+        """Get specific attendance detail"""
+        return attendance_svc.get_attendance_by_id(id)
+    
+    @jwt_required()
+    @role_required("ADMIN", "HR")
+    @attendance_ns.doc(security="Bearer Auth")
+    def delete(self, id):
+        """Delete attendance record"""
+        return attendance_svc.delete_attendance(id)
+
+@attendance_ns.route("/<int:id>/check")
+class ToggleChecked(Resource):
+    @jwt_required()
+    @role_required("ADMIN", "HR")
+    @attendance_ns.doc(security="Bearer Auth")
+    @attendance_ns.marshal_with(attendance_response_schema)
+    def patch(self, id):
+        """Toggle checked status (checked ↔ unchecked)"""
+        return attendance_svc.toggle_checked(id)
