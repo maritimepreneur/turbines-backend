@@ -1,7 +1,9 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import or_, desc, asc
 from datetime import date, datetime
 from app.services.base_service import BaseService
 from app.models.attendances import Attendance
+from app.models.employees import Employee
 from app.utils import response
 
 class AttendanceService(BaseService):
@@ -14,21 +16,11 @@ class AttendanceService(BaseService):
     def delete_attendance(self, attendance_id: int):
         return self.delete(attendance_id)
 
+    # --- Clock In/Out Logic ---
     def clock_in(self, employee_id: int, payload: dict):
-        """
-        Clock in for employee
-        payload: {
-            "timestamp": "2025-02-02T08:00:00",
-            "status": "On Time" / "Late",
-            "desc": "Arrived at office",
-            "latitude": -6.200000,
-            "longitude": 106.816666
-        }
-        """
         try:
             today = date.today()
             
-            # Check if already clocked in today
             existing = self.db.query(Attendance).filter(
                 Attendance.employee_id == employee_id,
                 Attendance.date == today
@@ -37,7 +29,6 @@ class AttendanceService(BaseService):
             if existing:
                 return response(400, "Already clocked in today")
             
-            # Create clock in data
             clock_in_data = {
                 "timestamp": payload.get('timestamp', datetime.now().isoformat()),
                 "status": payload.get('status', 'On Time'),
@@ -45,13 +36,12 @@ class AttendanceService(BaseService):
                 "longitude": payload.get('longitude')
             }
             
-            # Create new attendance record
             new_attendance = Attendance(
                 date=today,
                 employee_id=employee_id,
                 clock_in=clock_in_data,
-                clock_out={},  # Empty for now
-                checked=False  # Default belum di-check
+                clock_out={},  
+                checked=False  
             )
             
             self.db.add(new_attendance)
@@ -65,20 +55,9 @@ class AttendanceService(BaseService):
             return response(500, f"Error clock in: {str(e)}")
 
     def clock_out(self, employee_id: int, payload: dict):
-        """
-        Clock out for employee
-        payload: {
-            "timestamp": "2025-02-02T17:00:00",
-            "status": "On Time" / "Early",
-            "desc": "Finished work",
-            "latitude": -6.200000,
-            "longitude": 106.816666
-        }
-        """
         try:
             today = date.today()
             
-            # Find today's attendance
             attendance = self.db.query(Attendance).filter(
                 Attendance.employee_id == employee_id,
                 Attendance.date == today
@@ -90,7 +69,6 @@ class AttendanceService(BaseService):
             if attendance.clock_out and attendance.clock_out != {}:
                 return response(400, "Already clocked out today")
             
-            # Create clock out data
             clock_out_data = {
                 "timestamp": payload.get('timestamp', datetime.now().isoformat()),
                 "status": payload.get('status', 'On Time'),
@@ -99,7 +77,6 @@ class AttendanceService(BaseService):
                 "longitude": payload.get('longitude')
             }
             
-            # Update attendance
             attendance.clock_out = clock_out_data
             self.db.commit()
             self.db.refresh(attendance)
@@ -111,7 +88,6 @@ class AttendanceService(BaseService):
             return response(500, f"Error clock out: {str(e)}")
 
     def get_today_status(self, employee_id: int):
-        """Check if employee has clocked in/out today"""
         try:
             today = date.today()
             attendance = self.db.query(Attendance).filter(
@@ -138,13 +114,11 @@ class AttendanceService(BaseService):
             return response(500, f"Error getting status: {str(e)}")
 
     def toggle_checked(self, attendance_id: int):
-        """Toggle checked status (for admin/HR)"""
         try:
             attendance = self._get_by_id(attendance_id)
             if not attendance:
                 return response(404, "Attendance not found")
             
-            # Toggle: jika True jadi False, jika False jadi True
             attendance.checked = not attendance.checked
             self.db.commit()
             self.db.refresh(attendance)
@@ -155,3 +129,69 @@ class AttendanceService(BaseService):
         except Exception as e:
             self.db.rollback()
             return response(500, f"Error toggling checked status: {str(e)}")
+
+    # --- Search & Filter Logic (UPDATED) ---
+    def get_attendance_list_filter(self, payload):
+        try:
+            # 1. Extract Payload
+            page_size = payload.get('page_size', 10)
+            page_number = payload.get('page_number', 1)
+            search_query = payload.get('search', '')
+            checked_filter = payload.get('checked') 
+            start_date = payload.get('start_date')
+            end_date = payload.get('end_date')
+            sort_order = payload.get('sort_order', 'DESC')
+
+            # 2. Base Query dengan Join ke Employee
+            query = self.db.query(Attendance).join(Employee, Attendance.employee_id == Employee.id)
+
+            # 3. Logic Search (by Employee FULL NAME) --> PERBAIKAN DISINI
+            if search_query:
+                # Menggunakan full_name sesuai model Employee
+                query = query.filter(Employee.full_name.ilike(f"%{search_query}%"))
+
+            # 4. Logic Filter Checked Status
+            if checked_filter is not None:
+                query = query.filter(Attendance.checked == checked_filter)
+
+            # 5. Logic Filter Date Range
+            if start_date and end_date:
+                query = query.filter(Attendance.date.between(start_date, end_date))
+            elif start_date:
+                 query = query.filter(Attendance.date >= start_date)
+
+            # 6. Sorting
+            if sort_order.upper() == 'ASC':
+                query = query.order_by(asc(Attendance.date))
+            else:
+                query = query.order_by(desc(Attendance.date))
+
+            # 7. Pagination
+            total_items = query.count()
+            total_pages = (total_items + page_size - 1) // page_size
+            offset = (page_number - 1) * page_size
+            
+            raw_data = query.offset(offset).limit(page_size).all()
+
+            # 8. Serialization (Updated Field Name) --> PERBAIKAN DISINI
+            data_list = []
+            for item in raw_data:
+                att_dict = item.to_dict()
+                # Mengambil full_name dari relasi employee
+                att_dict['employee_name'] = item.employee.full_name if item.employee else "Unknown"
+                data_list.append(att_dict)
+
+            result = {
+                "list": data_list,
+                "pagination": {
+                    "current_page": page_number,
+                    "page_size": page_size,
+                    "total_pages": total_pages,
+                    "total_items": total_items
+                }
+            }
+            
+            return response(200, "Success", result)
+
+        except Exception as e:
+            return response(500, f"Error filtering attendance: {str(e)}")
