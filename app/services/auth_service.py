@@ -13,7 +13,7 @@ class AuthService(BaseService):
         super().__init__(db, User)
     
     def register_user(self, data: Dict[str, Any]):
-        """ Register a new user """
+
         try:
             username = data.get('username')
             email = data.get('email')
@@ -64,7 +64,7 @@ class AuthService(BaseService):
             return response(500, str(e))
     
     def login_user(self, data: Dict[str, Any]):
-        """ Login user and generate tokens """
+
         try:
             identifier = data.get('identifier')
             password = data.get('password')
