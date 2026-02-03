@@ -38,7 +38,6 @@ class EmployeeList(Resource):
 @employee_ns.route("/create")
 class EmployeeCreate(Resource):
     @jwt_required()
-    @role_required("ADMIN", "HR")
     @employee_ns.doc(security="Bearer Auth")
     @employee_ns.expect(employee_post_schema)
     @employee_ns.marshal_with(employee_response_schema)
@@ -57,7 +56,6 @@ class EmployeeDetail(Resource):
         return employee_svc.get_employee_by_id(id)
 
     @jwt_required()
-    @role_required("ADMIN", "HR")
     @employee_ns.doc(security="Bearer Auth")
     @employee_ns.expect(employee_post_schema)
     @employee_ns.marshal_with(employee_response_schema)
