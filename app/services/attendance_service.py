@@ -41,7 +41,6 @@ class AttendanceService(BaseService):
             clock_in_data = {
                 "timestamp": payload.get('timestamp', datetime.now().isoformat()),
                 "status": payload.get('status', 'On Time'),
-                "desc": payload.get('desc', ''),
                 "latitude": payload.get('latitude'),
                 "longitude": payload.get('longitude')
             }
