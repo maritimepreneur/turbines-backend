@@ -8,12 +8,12 @@ from app.utils import role_required
 attendance_ns = Namespace("attendances", description="Attendance Management")
 attendance_svc = AttendanceService(db.session)
 
-# Init Schemas
 attendance_response_schema = AttendanceSchema.get_schema(attendance_ns)
-clock_schema = AttendanceSchema.clock_schema(attendance_ns)
-today_status_schema = AttendanceSchema.today_status_schema(attendance_ns)
 
-# Filter Schemas
+clock_in_schema = AttendanceSchema.clock_in_schema(attendance_ns)
+clock_out_schema = AttendanceSchema.clock_out_schema(attendance_ns)
+
+today_status_schema = AttendanceSchema.today_status_schema(attendance_ns)
 attendance_filter_schema = AttendanceSchema.filter_schema(attendance_ns)
 attendance_filter_response = AttendanceSchema.filter_response_schema(attendance_ns)
 
@@ -33,7 +33,7 @@ class ClockIn(Resource):
     @jwt_required()
     @role_required("ADMIN", "HR", "USER")
     @attendance_ns.doc(security="Bearer Auth")
-    @attendance_ns.expect(clock_schema)
+    @attendance_ns.expect(clock_in_schema)
     @attendance_ns.marshal_with(attendance_response_schema)
     def post(self):
         """Clock in - employee diambil dari token JWT"""
@@ -45,7 +45,7 @@ class ClockOut(Resource):
     @jwt_required()
     @role_required("ADMIN", "HR", "USER")
     @attendance_ns.doc(security="Bearer Auth")
-    @attendance_ns.expect(clock_schema)
+    @attendance_ns.expect(clock_out_schema)
     @attendance_ns.marshal_with(attendance_response_schema)
     def post(self):
         """Clock out - employee diambil dari token JWT"""
