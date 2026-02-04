@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import or_, desc, asc
 from datetime import date, datetime
 from app.services.base_service import BaseService
 from app.models.attendances import Attendance
@@ -10,7 +11,6 @@ class AttendanceService(BaseService):
         super().__init__(db, Attendance)
 
     def _get_employee_from_user(self, user_id: int):
-        """Get employee record from logged-in user id"""
         return self.db.query(Employee).filter(Employee.user_id == user_id).first()
     
     def get_attendance_by_id(self, attendance_id: int):
@@ -21,14 +21,12 @@ class AttendanceService(BaseService):
 
     def clock_in(self, user_id: int, payload: dict):
         try:
-            # Cari employee dari user_id yang login
             employee = self._get_employee_from_user(user_id)
             if not employee:
                 return response(404, "Employee not found for this user")
 
             today = date.today()
 
-            # Check sudah clock in hari ini
             existing = self.db.query(Attendance).filter(
                 Attendance.employee_id == employee.id,
                 Attendance.date == today
@@ -40,7 +38,6 @@ class AttendanceService(BaseService):
             clock_in_data = {
                 "timestamp": payload.get('timestamp', datetime.now().isoformat()),
                 "status": payload.get('status', 'On Time'),
-                "desc": payload.get('desc', ''),
                 "latitude": payload.get('latitude'),
                 "longitude": payload.get('longitude')
             }
@@ -65,7 +62,6 @@ class AttendanceService(BaseService):
 
     def clock_out(self, user_id: int, payload: dict):
         try:
-            # Cari employee dari user_id yang login
             employee = self._get_employee_from_user(user_id)
             if not employee:
                 return response(404, "Employee not found for this user")
@@ -86,7 +82,7 @@ class AttendanceService(BaseService):
             clock_out_data = {
                 "timestamp": payload.get('timestamp', datetime.now().isoformat()),
                 "status": payload.get('status', 'On Time'),
-                "desc": payload.get('desc', ''),
+                "desc": payload.get('desc', ''), # Di clock out tetap ada
                 "latitude": payload.get('latitude'),
                 "longitude": payload.get('longitude')
             }
@@ -103,7 +99,6 @@ class AttendanceService(BaseService):
 
     def get_today_status(self, user_id: int):
         try:
-            # Cari employee dari user_id yang login
             employee = self._get_employee_from_user(user_id)
             if not employee:
                 return response(404, "Employee not found for this user")
@@ -149,7 +144,6 @@ class AttendanceService(BaseService):
             self.db.rollback()
             return response(500, f"Error toggling checked status: {str(e)}")
 
-
     def get_attendance_list_filter(self, payload):
         try:
             page_size = payload.get('page_size', 10)
@@ -171,7 +165,7 @@ class AttendanceService(BaseService):
             if start_date and end_date:
                 query = query.filter(Attendance.date.between(start_date, end_date))
             elif start_date:
-                 query = query.filter(Attendance.date >= start_date)
+                query = query.filter(Attendance.date >= start_date)
 
             if sort_order.upper() == 'ASC':
                 query = query.order_by(asc(Attendance.date))

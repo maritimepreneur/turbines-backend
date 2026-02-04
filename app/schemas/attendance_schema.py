@@ -14,16 +14,29 @@ class AttendanceSchema(BaseSchema):
                 "clock_out": fields.Raw,
                 "checked": fields.Boolean,
                 "employee_id": fields.Integer,
+                "employee_name": fields.String(description="Name of the employee"),
             }))
         })
     
+    
     @classmethod
-    def clock_schema(cls, namespace: Model):
-        """Schema for Clock In/Out"""
-        return namespace.model("ClockRequest", {
+    def clock_in_schema(cls, namespace: Model):
+        """Schema for Clock In Request (No Desc)"""
+        return namespace.model("ClockInRequest", {
             "timestamp": fields.String(required=False, description="ISO format datetime, default: now"),
             "status": fields.String(required=False, default="On Time", description="On Time / Late / Early"),
-            "desc": fields.String(required=False, description="Optional description"),
+            # Field desc dihapus dari sini
+            "latitude": fields.Float(required=False),
+            "longitude": fields.Float(required=False),
+        })
+
+    @classmethod
+    def clock_out_schema(cls, namespace: Model):
+        """Schema for Clock Out Request (With Desc)"""
+        return namespace.model("ClockOutRequest", {
+            "timestamp": fields.String(required=False, description="ISO format datetime, default: now"),
+            "status": fields.String(required=False, default="On Time", description="On Time / Late / Early"),
+            "desc": fields.String(required=False, description="Work description"), # Desc tetap ada disini
             "latitude": fields.Float(required=False),
             "longitude": fields.Float(required=False),
         })
@@ -40,32 +53,22 @@ class AttendanceSchema(BaseSchema):
             }))
         })
 
-    # --- NEW: Filter & Search Schema ---
     @classmethod
     def filter_schema(cls, namespace: Model):
         """Schema for Payload Search & Filter Attendance"""
         return namespace.model("AttendanceFilterRequest", {
-            # Pagination
-            "page_size": fields.Integer(required=True, default=10, description="Items per page"),
-            "page_number": fields.Integer(required=True, default=1, description="Current page number"),
-            
-            # Search by Employee Name
+            "page_size": fields.Integer(required=True, default=10),
+            "page_number": fields.Integer(required=True, default=1),
             "search": fields.String(description="Search by Employee Name"),
-            
-            # Filters
-            "checked": fields.Boolean(description="Filter by Checked status (true/false)"),
+            "checked": fields.Boolean(description="Filter by Checked status"),
             "start_date": fields.String(description="Filter Start Date (YYYY-MM-DD)"),
             "end_date": fields.String(description="Filter End Date (YYYY-MM-DD)"),
-            
-            # Sorting
-            "sort_order": fields.String(default="DESC", description="ASC or DESC based on Date")
+            "sort_order": fields.String(default="DESC")
         })
 
     @classmethod
     def filter_response_schema(cls, namespace: Model):
-        """Schema for Output Response Filter (List + Pagination)"""
-        
-        # Model Item per baris (attendance detail + nama employee)
+        """Schema for Output Response Filter"""
         attendance_item = namespace.model("AttendanceFilterItem", {
             "id": fields.Integer,
             "date": fields.String,
@@ -73,10 +76,9 @@ class AttendanceSchema(BaseSchema):
             "clock_out": fields.Raw,
             "checked": fields.Boolean,
             "employee_id": fields.Integer,
-            "employee_name": fields.String(description="Name of the employee"), # Field tambahan hasil Join
+            "employee_name": fields.String,
         })
 
-        # Model Pagination Info
         pagination_model = namespace.model("AttendancePaginationInfo", {
             "current_page": fields.Integer,
             "page_size": fields.Integer,
@@ -84,7 +86,6 @@ class AttendanceSchema(BaseSchema):
             "total_items": fields.Integer
         })
 
-        # Model Data Wrapper
         return namespace.model("AttendanceFilterResponse", {
             "message": fields.String(default="Success"),
             "code": fields.Integer(default=200),
