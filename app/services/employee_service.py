@@ -8,27 +8,18 @@ class EmployeeService(BaseService):
     def __init__(self, db: Session):
         super().__init__(db, Employee)
 
-    def create(self, employee_data):
-        """ Create employee """
-        return super().create(employee_data)
+    def get_all_employees(self):
+        return super().get_all()
 
     def get_employee_by_id(self, employee_id):
-        """ Get employee by ID """
-        employee = self._get_by_id(employee_id)
-        if not employee:
-            return response(404, "employee not found", None)
-        return response(200, "Success", employee)
+        return super().get_by_id(employee_id)
 
-    def update_employee_by_id(self, employee_id, updated_data):
-        """ Update employee """
-        employee = self._get_by_id(employee_id)
-        if not employee:
-            return response(404, "employee not found", None)
-        return super().update(employee_id, updated_data)
+    def create_employee(self, data):
+        data['user_id'] = self.get_user_id_login()
+        return super().create(data)
+
+    def update_employee_by_id(self, employee_id, data):
+        return super().update(employee_id, data)
 
     def delete_employee_by_id(self, employee_id):
-        """ Delete employee """
-        employee = self._get_by_id(employee_id)
-        if not employee:
-            return response(404, "employee not found", None)
         return super().delete(employee_id)

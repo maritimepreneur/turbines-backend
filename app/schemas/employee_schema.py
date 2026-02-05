@@ -13,11 +13,11 @@ class EmployeeSchema(BaseSchema):
                 "residence_address": fields.String,
                 "permanent_address": fields.String,
                 "birth_place": fields.String,
-                "birth_date": fields.String(attribute=lambda x: str(x.birth_date) if x.birth_date else None),
-                "religion": fields.String(attribute=lambda x: x.religion.value if x.religion else None),
-                "blood_type": fields.String(attribute=lambda x: x.blood_type.value if x.blood_type else None),
+                "birth_date": fields.String,
+                "religion": fields.String,
+                "blood_type": fields.String,
                 "nationality": fields.String,
-                "marital_status": fields.String(attribute=lambda x: x.marital_status.value if x.marital_status else None),
+                "marital_status": fields.String,
                 "ktp": fields.String,
                 "driving_license": fields.String,
                 "npwp": fields.String,
@@ -58,7 +58,6 @@ class EmployeeSchema(BaseSchema):
             "img_url": fields.String,
             "signature_img_url": fields.String,
             "signature_scale": fields.Float(default=1.0),
-            "user_id": fields.Integer,
         })
 
     @classmethod

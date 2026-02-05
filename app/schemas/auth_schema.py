@@ -5,26 +5,25 @@ class AuthSchema(BaseSchema):
     
     @classmethod
     def register_schema(cls, namespace: Model):
-        """ Schema for user registration """
+  
         return namespace.model("RegisterRequest", {
             "username": fields.String(required=True, description="Username"),
             "email": fields.String(required=True, description="Email address"),
             "password": fields.String(required=True, description="Password"),
             "confirm_password": fields.String(required=True, description="Confirm password"),
-            "role": fields.String(required=False, default="USER", description="User role (ADMIN, BIZDEV, FINANCE, OPERATION, USER)")
         })
     
     @classmethod
     def login_schema(cls, namespace: Model):
         """ Schema for user login """
         return namespace.model("LoginRequest", {
-            "identifier": fields.String(required=True, example="test@example.com", description="Username or Email"),
+            "identifier": fields.String(required=True, example="testuser", description="Username or Email"),
             "password": fields.String(required=True, example="password123", description="Password")
         })
     
     @classmethod
     def user_response_schema(cls, namespace: Model):
-        """ Schema for user response """
+
         user_data = namespace.model("UserData", {
             "id": fields.Integer,
             "username": fields.String,
