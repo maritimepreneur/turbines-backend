@@ -9,6 +9,9 @@ from app.utils import response
 class AttendanceService(BaseService):
     def __init__(self, db: Session):
         super().__init__(db, Attendance)
+
+    def _get_employee_from_user(self, user_id: int):
+        return self.db.query(Employee).filter(Employee.user_id == user_id).first()
     
     def get_attendance_by_id(self, attendance_id: int):
         return self.get_by_id(attendance_id)
@@ -16,100 +19,111 @@ class AttendanceService(BaseService):
     def delete_attendance(self, attendance_id: int):
         return self.delete(attendance_id)
 
-    # --- Clock In/Out Logic ---
-    def clock_in(self, employee_id: int, payload: dict):
+    def clock_in(self, user_id: int, payload: dict):
         try:
+            employee = self._get_employee_from_user(user_id)
+            if not employee:
+                return response(404, "Employee not found for this user")
+
             today = date.today()
-            
+
             existing = self.db.query(Attendance).filter(
-                Attendance.employee_id == employee_id,
+                Attendance.employee_id == employee.id,
                 Attendance.date == today
             ).first()
-            
+
             if existing:
                 return response(400, "Already clocked in today")
-            
+
             clock_in_data = {
                 "timestamp": payload.get('timestamp', datetime.now().isoformat()),
                 "status": payload.get('status', 'On Time'),
                 "latitude": payload.get('latitude'),
                 "longitude": payload.get('longitude')
             }
-            
+
             new_attendance = Attendance(
                 date=today,
-                employee_id=employee_id,
+                employee_id=employee.id,
                 clock_in=clock_in_data,
-                clock_out={},  
-                checked=False  
+                clock_out={},
+                checked=False
             )
-            
+
             self.db.add(new_attendance)
             self.db.commit()
             self.db.refresh(new_attendance)
-            
+
             return response(201, "Clock in successful", new_attendance)
-            
+
         except Exception as e:
             self.db.rollback()
             return response(500, f"Error clock in: {str(e)}")
 
-    def clock_out(self, employee_id: int, payload: dict):
+    def clock_out(self, user_id: int, payload: dict):
         try:
+            employee = self._get_employee_from_user(user_id)
+            if not employee:
+                return response(404, "Employee not found for this user")
+
             today = date.today()
-            
+
             attendance = self.db.query(Attendance).filter(
-                Attendance.employee_id == employee_id,
+                Attendance.employee_id == employee.id,
                 Attendance.date == today
             ).first()
-            
+
             if not attendance:
                 return response(404, "Please clock in first")
-            
+
             if attendance.clock_out and attendance.clock_out != {}:
                 return response(400, "Already clocked out today")
-            
+
             clock_out_data = {
                 "timestamp": payload.get('timestamp', datetime.now().isoformat()),
                 "status": payload.get('status', 'On Time'),
-                "desc": payload.get('desc', ''),
+                "desc": payload.get('desc', ''), # Di clock out tetap ada
                 "latitude": payload.get('latitude'),
                 "longitude": payload.get('longitude')
             }
-            
+
             attendance.clock_out = clock_out_data
             self.db.commit()
             self.db.refresh(attendance)
-            
+
             return response(200, "Clock out successful", attendance)
-            
+
         except Exception as e:
             self.db.rollback()
             return response(500, f"Error clock out: {str(e)}")
 
-    def get_today_status(self, employee_id: int):
+    def get_today_status(self, user_id: int):
         try:
+            employee = self._get_employee_from_user(user_id)
+            if not employee:
+                return response(404, "Employee not found for this user")
+
             today = date.today()
             attendance = self.db.query(Attendance).filter(
-                Attendance.employee_id == employee_id,
+                Attendance.employee_id == employee.id,
                 Attendance.date == today
             ).first()
-            
+
             if not attendance:
                 return response(200, "Success", {
                     "clocked_in": False,
                     "clocked_out": False,
                     "attendance": None
                 })
-            
+
             has_clock_out = attendance.clock_out and attendance.clock_out != {}
-            
+
             return response(200, "Success", {
                 "clocked_in": True,
                 "clocked_out": has_clock_out,
                 "attendance": attendance.to_dict()
             })
-            
+
         except Exception as e:
             return response(500, f"Error getting status: {str(e)}")
 
@@ -118,22 +132,20 @@ class AttendanceService(BaseService):
             attendance = self._get_by_id(attendance_id)
             if not attendance:
                 return response(404, "Attendance not found")
-            
+
             attendance.checked = not attendance.checked
             self.db.commit()
             self.db.refresh(attendance)
-            
+
             status = "checked" if attendance.checked else "unchecked"
             return response(200, f"Attendance marked as {status}", attendance)
-            
+
         except Exception as e:
             self.db.rollback()
             return response(500, f"Error toggling checked status: {str(e)}")
 
-    # --- Search & Filter Logic (UPDATED) ---
     def get_attendance_list_filter(self, payload):
         try:
-            # 1. Extract Payload
             page_size = payload.get('page_size', 10)
             page_number = payload.get('page_number', 1)
             search_query = payload.get('search', '')
@@ -142,42 +154,33 @@ class AttendanceService(BaseService):
             end_date = payload.get('end_date')
             sort_order = payload.get('sort_order', 'DESC')
 
-            # 2. Base Query dengan Join ke Employee
             query = self.db.query(Attendance).join(Employee, Attendance.employee_id == Employee.id)
 
-            # 3. Logic Search (by Employee FULL NAME) --> PERBAIKAN DISINI
             if search_query:
-                # Menggunakan full_name sesuai model Employee
                 query = query.filter(Employee.full_name.ilike(f"%{search_query}%"))
 
-            # 4. Logic Filter Checked Status
             if checked_filter is not None:
                 query = query.filter(Attendance.checked == checked_filter)
 
-            # 5. Logic Filter Date Range
             if start_date and end_date:
                 query = query.filter(Attendance.date.between(start_date, end_date))
             elif start_date:
-                 query = query.filter(Attendance.date >= start_date)
+                query = query.filter(Attendance.date >= start_date)
 
-            # 6. Sorting
             if sort_order.upper() == 'ASC':
                 query = query.order_by(asc(Attendance.date))
             else:
                 query = query.order_by(desc(Attendance.date))
 
-            # 7. Pagination
             total_items = query.count()
             total_pages = (total_items + page_size - 1) // page_size
             offset = (page_number - 1) * page_size
             
             raw_data = query.offset(offset).limit(page_size).all()
 
-            # 8. Serialization (Updated Field Name) --> PERBAIKAN DISINI
             data_list = []
             for item in raw_data:
                 att_dict = item.to_dict()
-                # Mengambil full_name dari relasi employee
                 att_dict['employee_name'] = item.employee.full_name if item.employee else "Unknown"
                 data_list.append(att_dict)
 
