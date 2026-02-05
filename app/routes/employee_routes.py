@@ -28,11 +28,12 @@ class EmployeeList(Resource):
     @jwt_required()
     @role_required("ADMIN", "HR")
     @employee_ns.doc(security="Bearer Auth")
+    @employee_ns.expect(employee_filter_schema)
     @employee_ns.response(200, "Success", employee_filter_response)
     @employee_ns.marshal_list_with(employee_response_schema) 
     def post(self):
         """ Cari dan Filter karyawan (pagination nanti di service) """
-        return employee_svc.get_all()
+        return employee_svc.get_all_employees()
 
 
 @employee_ns.route("/create")
@@ -44,7 +45,7 @@ class EmployeeCreate(Resource):
     @employee_ns.marshal_with(employee_response_schema)
     def post(self):
         """ Membuat data karyawan baru """
-        return employee_svc.create(employee_ns.payload)
+        return employee_svc.create_employee(employee_ns.payload)
 
 
 @employee_ns.route("/<int:id>")

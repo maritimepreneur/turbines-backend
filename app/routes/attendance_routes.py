@@ -37,8 +37,7 @@ class ClockIn(Resource):
     @attendance_ns.marshal_with(attendance_response_schema)
     def post(self):
         """Clock in - employee diambil dari token JWT"""
-        user_id = get_jwt_identity()
-        return attendance_svc.clock_in(user_id, attendance_ns.payload or {})
+        return attendance_svc.clock_in(attendance_ns.payload or {})
 
 @attendance_ns.route("/clock-out")
 class ClockOut(Resource):

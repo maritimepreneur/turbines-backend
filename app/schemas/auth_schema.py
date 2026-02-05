@@ -11,7 +11,6 @@ class AuthSchema(BaseSchema):
             "email": fields.String(required=True, description="Email address"),
             "password": fields.String(required=True, description="Password"),
             "confirm_password": fields.String(required=True, description="Confirm password"),
-            "role": fields.String(required=False, default="USER", description="User role (ADMIN, BIZDEV, FINANCE, OPERATION, USER)")
         })
     
     @classmethod

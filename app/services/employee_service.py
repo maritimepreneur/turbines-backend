@@ -15,6 +15,7 @@ class EmployeeService(BaseService):
         return super().get_by_id(employee_id)
 
     def create_employee(self, data):
+        data['user_id'] = self.get_user_id_login()
         return super().create(data)
 
     def update_employee_by_id(self, employee_id, data):

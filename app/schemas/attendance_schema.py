@@ -23,7 +23,6 @@ class AttendanceSchema(BaseSchema):
     def clock_in_schema(cls, namespace: Model):
         """Schema for Clock In Request (No Desc)"""
         return namespace.model("ClockInRequest", {
-            "timestamp": fields.String(required=False, description="ISO format datetime, default: now"),
             "status": fields.String(required=False, default="On Time", description="On Time / Late / Early"),
             # Field desc dihapus dari sini
             "latitude": fields.Float(required=False),
@@ -34,7 +33,6 @@ class AttendanceSchema(BaseSchema):
     def clock_out_schema(cls, namespace: Model):
         """Schema for Clock Out Request (With Desc)"""
         return namespace.model("ClockOutRequest", {
-            "timestamp": fields.String(required=False, description="ISO format datetime, default: now"),
             "status": fields.String(required=False, default="On Time", description="On Time / Late / Early"),
             "desc": fields.String(required=False, description="Work description"), # Desc tetap ada disini
             "latitude": fields.Float(required=False),
