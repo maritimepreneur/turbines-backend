@@ -55,7 +55,8 @@ class EmployeeSchema(BaseSchema):
             "whatsapp": fields.String(required=True),
             "email": fields.String(required=True),
             "handphone": fields.String(required=True),
-            "employee_code": fields.String(required=True),
+            "employee_code": fields.String(readonly=True, description="Auto-generated (EMP-XXXX)"),
+            
             "img_url": fields.String,
             "signature_img_url": fields.String,
             "signature_scale": fields.Float(default=1.0),
@@ -108,7 +109,6 @@ class EmployeeSchema(BaseSchema):
     @classmethod
     def list_response_schema(cls, namespace: Model):
         """Schema untuk Response Get All (Array of Objects)"""
-        
         employee_list_item = namespace.model("EmployeeListItem", {
             "id": fields.Integer,
             "full_name": fields.String,

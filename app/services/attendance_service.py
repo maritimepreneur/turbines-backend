@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, desc, asc
+from sqlalchemy import or_, desc, asc, not_ # <-- PENTING: Tambahkan not_
 from datetime import date, datetime
 from app.services.base_service import BaseService
 from app.models.attendances import Attendance
@@ -35,9 +35,11 @@ class AttendanceService(BaseService):
 
             if existing:
                 return response(400, "Already clocked in today")
+            
             timenow = datetime.now().isoformat()
             ontime = "09:00"
             status = "On Time" if timenow <= f"{today}T{ontime}:00" else "Late"
+            
             clock_in_data = {
                 "timestamp": timenow,
                 "status": status,
@@ -85,7 +87,7 @@ class AttendanceService(BaseService):
             clock_out_data = {
                 "timestamp": datetime.now().isoformat(),
                 "status": payload.get('status', 'On Time'),
-                "desc": payload.get('desc', ''), # Di clock out tetap ada
+                "desc": payload.get('desc', ''), 
                 "latitude": payload.get('latitude'),
                 "longitude": payload.get('longitude')
             }
@@ -168,7 +170,7 @@ class AttendanceService(BaseService):
             if start_date and end_date:
                 query = query.filter(Attendance.date.between(start_date, end_date))
             elif start_date:
-                query = query.filter(Attendance.date >= start_date)
+                 query = query.filter(Attendance.date >= start_date)
 
             if sort_order.upper() == 'ASC':
                 query = query.order_by(asc(Attendance.date))
@@ -201,3 +203,36 @@ class AttendanceService(BaseService):
 
         except Exception as e:
             return response(500, f"Error filtering attendance: {str(e)}")
+
+    def get_absent_list(self):
+        try:
+            today = date.today()
+
+            present_ids_query = self.db.query(Attendance.employee_id).filter(
+                Attendance.date == today
+            ).all()
+            
+            present_employee_ids = [x[0] for x in present_ids_query]
+
+            if present_employee_ids:
+                absent_query = self.db.query(Employee).filter(
+                    not_(Employee.id.in_(present_employee_ids))
+                ).all()
+            else:
+                absent_query = self.db.query(Employee).all()
+
+            data_list = []
+            for emp in absent_query:
+                data_list.append({
+                    "id": emp.id,
+                    "employee_name": emp.full_name,
+                    "employee_code": emp.employee_code,
+                    "nickname": emp.nickname, 
+                    "img_url": emp.img_url,
+                    "phone": emp.phone
+                })
+
+            return response(200, "Success retrieving absent list", data_list)
+
+        except Exception as e:
+            return response(500, f"Error getting absent list: {str(e)}")
