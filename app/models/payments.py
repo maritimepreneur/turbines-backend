@@ -19,4 +19,11 @@ class Payment(db.Model):
 
     invoice = relationship("Invoice", back_populates="payments")
 
-    """" Disini buat dict kalau perlu """
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "date": self.date.isoformat() if self.date else None,
+            "nominal": float(self.nominal),
+            "notes": self.notes,
+            "attachments": self.attachments
+        }

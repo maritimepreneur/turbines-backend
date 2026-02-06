@@ -16,5 +16,6 @@ from .schedules import Schedule
 from .candidates import Candidate
 from .requirements import Requirement
 from .cv_trackers import CV_Tracker
-from .leaves import Leave
+from .leave_policy import Leave_Policy
+from .leave_history import Leave_History
 from .attendances import Attendance

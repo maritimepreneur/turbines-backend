@@ -43,4 +43,12 @@ class Document(db.Model):
     quotation = relationship("Quotation", back_populates="documents")
 
 
-    """ Disini buat dict kalau perlu """
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "number": self.number,
+            "name": self.name,
+            "document_type": self.document_type.value if self.document_type else None,
+            "project_id": self.project_id,
+            "quotation_id": self.quotation_id
+        }
