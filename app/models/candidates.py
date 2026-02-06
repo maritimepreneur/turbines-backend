@@ -17,3 +17,15 @@ class Candidate(db.Model):
     description = Column(String, nullable=False)
 
     cv_trackers = relationship("CV_Tracker", back_populates="candidate")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "code": self.code,
+            "red_flag": self.red_flag,
+            "reason": self.reason,
+            "cv_source": self.cv_source,
+            "referrer_name": self.referrer_name,
+            "description": self.description,
+        }
