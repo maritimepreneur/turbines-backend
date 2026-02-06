@@ -18,14 +18,11 @@ class AttendanceSchema(BaseSchema):
             }))
         })
     
-    
     @classmethod
     def clock_in_schema(cls, namespace: Model):
         """Schema for Clock In Request (No Desc)"""
         return namespace.model("ClockInRequest", {
-            "timestamp": fields.String(required=False, description="ISO format datetime, default: now"),
             "status": fields.String(required=False, default="On Time", description="On Time / Late / Early"),
-            # Field desc dihapus dari sini
             "latitude": fields.Float(required=False),
             "longitude": fields.Float(required=False),
         })
@@ -34,9 +31,8 @@ class AttendanceSchema(BaseSchema):
     def clock_out_schema(cls, namespace: Model):
         """Schema for Clock Out Request (With Desc)"""
         return namespace.model("ClockOutRequest", {
-            "timestamp": fields.String(required=False, description="ISO format datetime, default: now"),
             "status": fields.String(required=False, default="On Time", description="On Time / Late / Early"),
-            "desc": fields.String(required=False, description="Work description"), # Desc tetap ada disini
+            "desc": fields.String(required=False, description="Work description"),
             "latitude": fields.Float(required=False),
             "longitude": fields.Float(required=False),
         })
@@ -94,4 +90,24 @@ class AttendanceSchema(BaseSchema):
                 "list": fields.List(fields.Nested(attendance_item)),
                 "pagination": fields.Nested(pagination_model)
             }))
+        })
+
+    @classmethod
+    def absent_list_response_schema(cls, namespace: Model):
+        """Schema untuk Response Absent List"""
+        
+        absent_item = namespace.model("AbsentEmployeeItem", {
+            "id": fields.Integer, 
+            "employee_name": fields.String,
+            "employee_code": fields.String,
+            "job_title": fields.String(attribute="nickname"),
+            "img_url": fields.String,
+            "phone": fields.String
+        })
+
+        return namespace.model("AbsentListResponse", {
+            "message": fields.String(default="Success"),
+            "code": fields.Integer(default=200),
+            "status": fields.String(default="success"),
+            "data": fields.List(fields.Nested(absent_item))
         })

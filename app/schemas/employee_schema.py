@@ -4,6 +4,7 @@ from app.schemas.base_schema import BaseSchema
 class EmployeeSchema(BaseSchema):
     @classmethod
     def get_schema(cls, namespace: Model):
+        """Schema untuk Detail Employee (Single Object)"""
         return namespace.model("EmployeeResponse", {
             **BaseSchema.get_schema(namespace),
             "data": fields.Nested(namespace.model("Employee", {
@@ -13,11 +14,11 @@ class EmployeeSchema(BaseSchema):
                 "residence_address": fields.String,
                 "permanent_address": fields.String,
                 "birth_place": fields.String,
-                "birth_date": fields.String(attribute=lambda x: str(x.birth_date) if x.birth_date else None),
-                "religion": fields.String(attribute=lambda x: x.religion.value if x.religion else None),
-                "blood_type": fields.String(attribute=lambda x: x.blood_type.value if x.blood_type else None),
+                "birth_date": fields.String,
+                "religion": fields.String,
+                "blood_type": fields.String,
                 "nationality": fields.String,
-                "marital_status": fields.String(attribute=lambda x: x.marital_status.value if x.marital_status else None),
+                "marital_status": fields.String,
                 "ktp": fields.String,
                 "driving_license": fields.String,
                 "npwp": fields.String,
@@ -35,7 +36,7 @@ class EmployeeSchema(BaseSchema):
 
     @classmethod
     def post_schema(cls, namespace: Model):
-        """Schema untuk create/update employee"""
+        """Schema untuk Create/Update Employee"""
         return namespace.model("EmployeePostRequest", {
             "full_name": fields.String(required=True),
             "nickname": fields.String(required=True),
@@ -54,15 +55,16 @@ class EmployeeSchema(BaseSchema):
             "whatsapp": fields.String(required=True),
             "email": fields.String(required=True),
             "handphone": fields.String(required=True),
-            "employee_code": fields.String(required=True),
+            "employee_code": fields.String(readonly=True, description="Auto-generated (EMP-XXXX)"),
+            
             "img_url": fields.String,
             "signature_img_url": fields.String,
             "signature_scale": fields.Float(default=1.0),
-            "user_id": fields.Integer,
         })
 
     @classmethod
     def filter_schema(cls, namespace: Model):
+        """Schema untuk Payload Filter & Search"""
         return namespace.model("EmployeeFilterRequest", {
             "page_size": fields.Integer(default=25),
             "page_number": fields.Integer(default=1),
@@ -76,7 +78,7 @@ class EmployeeSchema(BaseSchema):
 
     @classmethod
     def filter_response_schema(cls, namespace: Model):
-        """Schema untuk response list (Pagination)"""
+        """Schema untuk Response List dengan Pagination"""
         employee_item_model = namespace.model("EmployeeFilterItem", {
             "id": fields.Integer,
             "employee_code": fields.String,
@@ -102,4 +104,25 @@ class EmployeeSchema(BaseSchema):
                 "list": fields.List(fields.Nested(employee_item_model)),
                 "pagination": fields.Nested(pagination_model)
             }))
+        })
+
+    @classmethod
+    def list_response_schema(cls, namespace: Model):
+        """Schema untuk Response Get All (Array of Objects)"""
+        employee_list_item = namespace.model("EmployeeListItem", {
+            "id": fields.Integer,
+            "full_name": fields.String,
+            "nickname": fields.String,
+            "employee_code": fields.String,
+            "email": fields.String,
+            "phone": fields.String,
+            "img_url": fields.String,
+            "religion": fields.String,
+        })
+
+        return namespace.model("EmployeeListResponse", {
+            "message": fields.String(default="Success"),
+            "code": fields.Integer(default=200),
+            "status": fields.String(default="success"),
+            "data": fields.List(fields.Nested(employee_list_item))
         })

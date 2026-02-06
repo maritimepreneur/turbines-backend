@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, desc, asc
+from sqlalchemy import or_, desc, asc, not_ 
 from datetime import date, datetime
 from app.services.base_service import BaseService
 from app.models.attendances import Attendance
@@ -19,8 +19,9 @@ class AttendanceService(BaseService):
     def delete_attendance(self, attendance_id: int):
         return self.delete(attendance_id)
 
-    def clock_in(self, user_id: int, payload: dict):
+    def clock_in(self, payload: dict):
         try:
+            user_id = self.get_user_id_login()
             employee = self._get_employee_from_user(user_id)
             if not employee:
                 return response(404, "Employee not found for this user")
@@ -34,10 +35,14 @@ class AttendanceService(BaseService):
 
             if existing:
                 return response(400, "Already clocked in today")
-
+            
+            timenow = datetime.now().isoformat()
+            ontime = "09:00"
+            status = "On Time" if timenow <= f"{today}T{ontime}:00" else "Late"
+            
             clock_in_data = {
-                "timestamp": payload.get('timestamp', datetime.now().isoformat()),
-                "status": payload.get('status', 'On Time'),
+                "timestamp": timenow,
+                "status": status,
                 "latitude": payload.get('latitude'),
                 "longitude": payload.get('longitude')
             }
@@ -80,9 +85,9 @@ class AttendanceService(BaseService):
                 return response(400, "Already clocked out today")
 
             clock_out_data = {
-                "timestamp": payload.get('timestamp', datetime.now().isoformat()),
+                "timestamp": datetime.now().isoformat(),
                 "status": payload.get('status', 'On Time'),
-                "desc": payload.get('desc', ''), # Di clock out tetap ada
+                "desc": payload.get('desc', ''), 
                 "latitude": payload.get('latitude'),
                 "longitude": payload.get('longitude')
             }
@@ -198,3 +203,36 @@ class AttendanceService(BaseService):
 
         except Exception as e:
             return response(500, f"Error filtering attendance: {str(e)}")
+
+    def get_absent_list(self):
+        try:
+            today = date.today()
+
+            present_ids_query = self.db.query(Attendance.employee_id).filter(
+                Attendance.date == today
+            ).all()
+            
+            present_employee_ids = [x[0] for x in present_ids_query]
+
+            if present_employee_ids:
+                absent_query = self.db.query(Employee).filter(
+                    not_(Employee.id.in_(present_employee_ids))
+                ).all()
+            else:
+                absent_query = self.db.query(Employee).all()
+
+            data_list = []
+            for emp in absent_query:
+                data_list.append({
+                    "id": emp.id,
+                    "employee_name": emp.full_name,
+                    "employee_code": emp.employee_code,
+                    "nickname": emp.nickname, 
+                    "img_url": emp.img_url,
+                    "phone": emp.phone
+                })
+
+            return response(200, "Success retrieving absent list", data_list)
+
+        except Exception as e:
+            return response(500, f"Error getting absent list: {str(e)}")

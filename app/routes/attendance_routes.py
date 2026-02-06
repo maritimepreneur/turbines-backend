@@ -17,6 +17,9 @@ today_status_schema = AttendanceSchema.today_status_schema(attendance_ns)
 attendance_filter_schema = AttendanceSchema.filter_schema(attendance_ns)
 attendance_filter_response = AttendanceSchema.filter_response_schema(attendance_ns)
 
+absent_list_response = AttendanceSchema.absent_list_response_schema(attendance_ns)
+
+
 @attendance_ns.route("/")
 class AttendanceList(Resource):
     @jwt_required()
@@ -28,6 +31,17 @@ class AttendanceList(Resource):
         """Search and Filter Attendances (Calendar & Status)"""
         return attendance_svc.get_attendance_list_filter(attendance_ns.payload)
 
+@attendance_ns.route("/absent")
+class AbsentList(Resource):
+    @jwt_required()
+    @role_required("ADMIN", "HR")
+    @attendance_ns.doc(security="Bearer Auth")
+    @attendance_ns.response(200, "Success", absent_list_response)
+    def get(self):
+        """ Get List of Employees Who Have Not Clocked In Today """
+        return attendance_svc.get_absent_list()
+
+
 @attendance_ns.route("/clock-in")
 class ClockIn(Resource):
     @jwt_required()
@@ -37,8 +51,7 @@ class ClockIn(Resource):
     @attendance_ns.marshal_with(attendance_response_schema)
     def post(self):
         """Clock in - employee diambil dari token JWT"""
-        user_id = get_jwt_identity()
-        return attendance_svc.clock_in(user_id, attendance_ns.payload or {})
+        return attendance_svc.clock_in(attendance_ns.payload or {})
 
 @attendance_ns.route("/clock-out")
 class ClockOut(Resource):

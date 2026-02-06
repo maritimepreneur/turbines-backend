@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from app.utils import response
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 
 class BaseService:
     def __init__(self, db: Session, model):
@@ -44,3 +45,6 @@ class BaseService:
         self.db.delete(obj)
         self.db.commit()
         return response(200, "Action Success", {"message": f"{self.model.__name__} deleted successfully"})
+
+    def get_user_id_login(self):
+        return get_jwt_identity()
