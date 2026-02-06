@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, desc, asc, not_ # <-- PENTING: Tambahkan not_
+from sqlalchemy import or_, desc, asc, not_ 
 from datetime import date, datetime
 from app.services.base_service import BaseService
 from app.models.attendances import Attendance
@@ -170,7 +170,7 @@ class AttendanceService(BaseService):
             if start_date and end_date:
                 query = query.filter(Attendance.date.between(start_date, end_date))
             elif start_date:
-                 query = query.filter(Attendance.date >= start_date)
+                query = query.filter(Attendance.date >= start_date)
 
             if sort_order.upper() == 'ASC':
                 query = query.order_by(asc(Attendance.date))

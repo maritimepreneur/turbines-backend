@@ -97,7 +97,7 @@ class AttendanceSchema(BaseSchema):
         """Schema untuk Response Absent List"""
         
         absent_item = namespace.model("AbsentEmployeeItem", {
-            "id": fields.Integer, # ID Employee
+            "id": fields.Integer, 
             "employee_name": fields.String,
             "employee_code": fields.String,
             "job_title": fields.String(attribute="nickname"),
