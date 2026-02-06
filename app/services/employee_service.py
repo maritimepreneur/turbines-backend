@@ -16,7 +16,22 @@ class EmployeeService(BaseService):
 
     def create_employee(self, data):
         data['user_id'] = self.get_user_id_login()
+
+        if not data.get('employee_code') or data.get('employee_code') == "string":
+            data['employee_code'] = self.generate_employee_code()
+
         return super().create(data)
+    
+    from datetime import datetime
+
+    def generate_employee_code(self):
+        
+        count = self.db.query(Employee).count()
+        new_number = count + 1
+        
+        new_code = f"EMP{new_number:03d}"
+        
+        return new_code
 
     def update_employee_by_id(self, employee_id, data):
         return super().update(employee_id, data)

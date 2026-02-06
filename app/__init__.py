@@ -24,6 +24,7 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
+    
 
     # JWT error handlers
     @jwt.expired_token_loader
