@@ -1,7 +1,7 @@
 ## Prerequisites
 
-- Python 3.9+
-- PostgreSQL 12+
+- Python 3.9plus
+- PostgreSQL 12plus
 
 ## Setup
 
