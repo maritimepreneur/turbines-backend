@@ -44,4 +44,13 @@ class Approval(db.Model):
     invoices = relationship("Invoice", back_populates="approvals")
     expense = relationship("Expense", back_populates="approvals")
 
-    """" Disini buat dict kalau perlu """
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "type": self.type.value if self.type else None,
+            "code": self.code,
+            "quotation_id": self.quotation_id,
+            "po_id": self.po_id,
+            "invoice_id": self.invoice_id,
+            "expense_id": self.expense_id
+        }

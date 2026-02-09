@@ -15,4 +15,12 @@ class Expense(db.Model):
     items = relationship("Item", back_populates="expense")
     approvals = relationship("Approval", back_populates="expense")
 
-    """" Disini buat dict kalau perlu """
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "period_date": self.period_date.isoformat() if self.period_date else None,
+            "code": self.code,
+            "status": self.status,
+            "total_amount": self.total_amount,
+            "notes": self.notes
+        }
