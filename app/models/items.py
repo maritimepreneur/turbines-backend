@@ -29,4 +29,14 @@ class Item(db.Model):
     expense = relationship("Expense", back_populates="items")
     quotation = relationship("Quotation", back_populates="items")
 
-    """" Disini buat dict kalau perlu """
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "cost": float(self.cost),
+            "amount": float(self.amount),
+            "billed_amount": float(self.billed_amount),
+            "type": self.type,
+            "amount_type": self.amount_type,
+            "attachments": self.attachments
+        }

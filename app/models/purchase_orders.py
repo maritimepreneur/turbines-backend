@@ -7,7 +7,7 @@ class Purchase_Order(db.Model):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
 
-    number = Column(String(100), unique=True, nullable=False)
+    number = Column(String, nullable=False)
     attachments = Column(String, nullable=False)
 
     __table_args__ = (
@@ -36,7 +36,6 @@ class Purchase_Order(db.Model):
     invoices = relationship("Invoice", back_populates="purchase_order")
     approvals = relationship("Approval", back_populates="purchase_orders")
 
-    """ Disini buat dict kalau perlu """
     def to_dict(self):
         return {
             "id": self.id,
