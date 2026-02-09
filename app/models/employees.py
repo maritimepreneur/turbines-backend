@@ -78,5 +78,35 @@ class Employee(db.Model):
     )
 
     user = relationship("User", back_populates="employee")
-    schedules = relationship("Schedule", back_populates="employee")
-    attendances = relationship("Attendance", back_populates="employee")
+
+    schedules = relationship("Schedule", back_populates="employee", cascade="all, delete-orphan")
+
+    attendances = relationship("Attendance", back_populates="employee", cascade="all, delete-orphan")
+
+    def to_dict(self):
+        """Helper untuk mengubah Object Employee ke Dictionary agar JSON Serializable"""
+        return {
+            "id": self.id,
+            "full_name": self.full_name,
+            "nickname": self.nickname,
+            "residence_address": self.residence_address,
+            "permanent_address": self.permanent_address,
+            "birth_place": self.birth_place,
+            "birth_date": str(self.birth_date) if self.birth_date else None,
+            "religion": self.religion.value if self.religion else None,
+            "blood_type": self.blood_type.value if self.blood_type else None,
+            "nationality": self.nationality,
+            "marital_status": self.marital_status.value if self.marital_status else None,
+            "ktp": self.ktp,
+            "driving_license": self.driving_license,
+            "npwp": self.npwp,
+            "phone": self.phone,
+            "whatsapp": self.whatsapp,
+            "email": self.email,
+            "handphone": self.handphone,
+            "employee_code": self.employee_code,
+            "img_url": self.img_url,
+            "signature_img_url": self.signature_img_url,
+            "signature_scale": self.signature_scale,
+            "user_id": self.user_id,
+        }
