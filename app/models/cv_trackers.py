@@ -20,3 +20,10 @@ class CV_Tracker(db.Model):
 
     candidate = relationship("Candidate", back_populates="cv_trackers")
     requirement = relationship("Requirement", back_populates="cv_trackers")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "candidate_id": self.candidate_id,
+            "requirement_id": self.requirement_id
+        }

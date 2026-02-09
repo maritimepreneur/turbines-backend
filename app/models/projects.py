@@ -74,4 +74,20 @@ class Project(db.Model):
     documents = relationship("Document", back_populates="project", cascade="all, delete-orphan")
     lead = relationship("Lead", back_populates="projects")
 
-    """ Disini buat dict kalau perlu """
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "location": self.location,
+            "type": self.type.value if self.type else None,
+            "duration": self.duration,
+            "start_date": self.start_date.isoformat() if self.start_date else None,
+            "end_date": self.end_date.isoformat() if self.end_date else None,
+            "payment_type": self.payment_type.value if self.payment_type else None,
+            "description": self.description,
+            "current_stages": self.current_stages.value if self.current_stages else None,
+            "contact_id": self.contact_id,
+            "partner_id": self.partner_id,
+            "invoice_id": self.invoice_id,
+            "lead_id": self.lead_id
+        }

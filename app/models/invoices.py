@@ -50,4 +50,24 @@ class Invoice(db.Model):
     approvals = relationship("Approval", back_populates="invoices")
     projects = relationship("Project", back_populates="invoices")
 
-    """" Disini buat dict kalau perlu """
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "number": self.number,
+            "created": self.created.isoformat() if self.created else None,
+            "period": self.period.isoformat() if self.period else None,
+            "due_date": self.due_date.isoformat() if self.due_date else None,
+            "billed_amount": float(self.billed_amount),
+            "total_amount": float(self.total_amount),
+            "notes": self.notes,
+            "vat": float(self.vat),
+            "pph": float(self.pph),
+            "overheads": float(self.overheads),
+            "discount": float(self.discount),
+            "grand_total": float(self.grand_total),
+            "payment_details": float(self.payment_details),
+            "agreement_letter": self.agreement_letter,
+            "contact_id": self.contact_id,
+            "partner_id": self.partner_id,
+            "purchase_order_id": self.purchase_order_id
+        }

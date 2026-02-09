@@ -36,4 +36,12 @@ class Purchase_Order(db.Model):
     invoices = relationship("Invoice", back_populates="purchase_order")
     approvals = relationship("Approval", back_populates="purchase_orders")
 
-    """ Disini buat dict kalau perlu """
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "number": self.number,
+            "attachments": self.attachments,
+            "partner_id": self.partner_id,
+            "contact_id": self.contact_id,
+            "quotation_id": self.quotation_id
+        }
