@@ -7,7 +7,7 @@ class Purchase_Order(db.Model):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
 
-    number = Column(Integer, nullable=False)
+    number = Column(String, nullable=False)
     attachments = Column(String, nullable=False)
 
     __table_args__ = (
