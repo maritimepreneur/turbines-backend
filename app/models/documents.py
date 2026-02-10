@@ -12,7 +12,7 @@ class DocumentType(Enum):
     TAX = "Tax"
     REPORT = "Report"
     CERTIFICATE = "Certificate"
-    AGGREMENT = "Agreement"
+    AGREEMENT = "Agreement"
     QUOTATION = "QUOTATION"
 
 class Document(db.Model):
