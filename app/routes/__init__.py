@@ -6,4 +6,5 @@ from .employee_routes import employee_ns
 from .attendance_routes import attendance_ns
 from .purchase_order_routes import purchase_order_ns
 from .vendor_route import vendor_ns 
+from .document_routes import document_ns
 from .quotation_routes import quotation_ns
