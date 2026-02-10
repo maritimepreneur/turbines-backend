@@ -88,6 +88,8 @@ def create_app():
     api.add_namespace(attendance_ns, path="/api/attendances")
     api.add_namespace(purchase_order_ns, path="/api/purchase-orders")
     api.add_namespace(document_ns, path="/api/documents")
+    api.add_namespace(employee_ns, path="/api/employees")
+    api.add_namespace(attendance_ns, path="/api/attendances")
 
 
     return app
