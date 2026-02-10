@@ -39,7 +39,7 @@ class Quotation(db.Model):
     def to_dict(self):
         return {
             "id": self.id,
-            "total_amount": float(self.total_amount),
+            "total_amount": str(self.total_amount),
             "document_content": self.document_content,
             "summary": self.summary,
             "offering_letter": self.offering_letter,
