@@ -5,3 +5,4 @@ from .lead_routes import lead_ns
 from .employee_routes import employee_ns
 from .attendance_routes import attendance_ns
 from .vendor_route import vendor_ns 
+from .quotation_routes import quotation_ns
