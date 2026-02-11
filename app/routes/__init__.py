@@ -8,3 +8,5 @@ from .purchase_order_routes import purchase_order_ns
 from .vendor_route import vendor_ns 
 from .quotation_routes import quotation_ns
 from .expense_routes import expense_ns
+from .document_routes import document_ns
+from .quotation_routes import quotation_ns
