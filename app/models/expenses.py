@@ -21,6 +21,6 @@ class Expense(db.Model):
             "period_date": self.period_date.isoformat() if self.period_date else None,
             "code": self.code,
             "status": self.status,
-            "total_amount": self.total_amount,
+            "total_amount": str(self.total_amount),
             "notes": self.notes
         }

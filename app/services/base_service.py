@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from app.utils import response
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
-
+from enum import Enum as PyEnum
 class BaseService:
     def __init__(self, db: Session, model):
         self.db = db
