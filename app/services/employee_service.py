@@ -77,3 +77,4 @@ class EmployeeService(BaseService):
             })
         except Exception as e:
             return response(500, f"Error: {str(e)}")
+    

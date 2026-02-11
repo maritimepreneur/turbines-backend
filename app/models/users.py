@@ -8,6 +8,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 class UserRole(Enum):
     ADMIN = "ADMIN"
     USER = "USER"
+    EMPLOYEE = "EMPLOYEE"
     BIZDEV = "BIZDEV"
     FINANCE = "FINANCE"
     OPERATION = "OPERATION"
@@ -43,3 +44,12 @@ class User(db.Model):
         return check_password_hash(self.password_hash, password)
     
     employee = relationship("Employee", back_populates="user", uselist=False)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "username": self.username,
+            "email": self.email,
+            "role": self.role.value if self.role else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
