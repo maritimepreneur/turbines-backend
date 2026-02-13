@@ -10,3 +10,4 @@ from .quotation_routes import quotation_ns
 from .expense_routes import expense_ns
 from .document_routes import document_ns
 from .quotation_routes import quotation_ns
+from .payment_routes import payment_ns

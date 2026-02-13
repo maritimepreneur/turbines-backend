@@ -76,7 +76,7 @@ def create_app():
     )
 
     # Import namespaces
-    from .routes import auth_ns, contact_ns, partner_ns, lead_ns, employee_ns, attendance_ns, vendor_ns, quotation_ns, purchase_order_ns, document_ns, expense_ns
+    from .routes import auth_ns, contact_ns, partner_ns, lead_ns, employee_ns, attendance_ns, vendor_ns, quotation_ns, purchase_order_ns, document_ns, expense_ns, payment_ns
     
     # Register namespaces dengan prefix /api
     api.add_namespace(auth_ns, path="/api/auth")
@@ -90,5 +90,6 @@ def create_app():
     api.add_namespace(purchase_order_ns, path="/api/purchase-orders")
     api.add_namespace(document_ns, path="/api/documents")
     api.add_namespace(expense_ns, path="/api/expenses")
+    api.add_namespace(payment_ns, path="/api/payments")
 
     return app
