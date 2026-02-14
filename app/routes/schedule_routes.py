@@ -1,5 +1,5 @@
 from flask_restx import Namespace, Resource
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from app.database import db
 from app.services.schedule_service import ScheduleService
 from app.schemas.schedule_schema import ScheduleSchema
@@ -14,15 +14,6 @@ schedule_filter_schema = ScheduleSchema.filter_schema(schedule_ns)
 schedule_filter_response = ScheduleSchema.filter_response_schema(schedule_ns)
 schedule_dropdown_schema = ScheduleSchema.dropdown_list_schema(schedule_ns)
 
-@schedule_ns.route("/employee-list")
-class ScheduleEmployeeList(Resource):
-    @jwt_required()
-    @role_required("ADMIN", "HR", "OPERATION")
-    @schedule_ns.doc(security="Bearer Auth")
-    @schedule_ns.marshal_with(schedule_dropdown_schema)
-    def get(self):
-        """Get list of employees (ID, Name, Code) for dropdown"""
-        return schedule_svc.get_employee_list_dropdown()
 
 @schedule_ns.route("/employee")
 class MySchedules(Resource):
@@ -57,13 +48,15 @@ class ScheduleList(Resource):
 @schedule_ns.route("/create")
 class ScheduleCreate(Resource):
     @jwt_required()
-    @role_required("ADMIN", "HR", "OPERATION")
+    @role_required("ADMIN", "HR", "OPERATION", "USER")
     @schedule_ns.doc(security="Bearer Auth")
     @schedule_ns.expect(schedule_post_schema)
     @schedule_ns.marshal_with(schedule_response_schema)
     def post(self):
-        """Create a new schedule"""
-        return schedule_svc.create_schedule(schedule_ns.payload)
+        user_id = get_jwt_identity()
+        claims = get_jwt()
+        user_role = claims.get('role') 
+        return schedule_svc.create_schedule(user_id, user_role, schedule_ns.payload)
 
 @schedule_ns.route("/<int:id>")
 class ScheduleDetail(Resource):

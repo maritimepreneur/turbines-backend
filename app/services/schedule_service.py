@@ -48,8 +48,26 @@ class ScheduleService(BaseService):
         except Exception as e:
             return response(500, f"Error fetching schedule: {str(e)}")
     
-    def create_schedule(self, data):
-        return self.create(data)
+    def create_schedule(self, user_id: int, user_role: str, data: dict):
+        try:
+            # For USER role, employee_id is derived from user_id. For ADMIN/HR/OPERATION, employee_id must be provided in data.
+            if user_role == "USER":
+                employee = self.db.query(Employee).filter(Employee.user_id == user_id).first()
+                if not employee:
+                    return response(404, "Employee not found")
+                data["employee_id"] = employee.id
+            else:  
+                if 'employee_id' not in data or data['employee_id'] is None:
+                    return response(400, "employee_id is required for admin/HR")
+                # Validasi employee_id exist
+                employee = self.db.query(Employee).filter(Employee.id == data['employee_id']).first()
+                if not employee:
+                    return response(404, f"Employee with id {data['employee_id']} not found. Please check employee list.")
+
+            return self.create(data)
+        except Exception as e:
+            return response(500, str(e))
+
     
     def update_schedule(self, schedule_id: int, data):
         return self.update(schedule_id, data)
