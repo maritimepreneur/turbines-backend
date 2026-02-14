@@ -58,7 +58,7 @@ class ScheduleService(BaseService):
                 data["employee_id"] = employee.id
             else:  
                 if 'employee_id' not in data or data['employee_id'] is None:
-                    return response(400, "employee_id is required for admin/HR")
+                    return response(400, "field employee_id is required for admin/HR")
                 # Validasi employee_id exist
                 employee = self.db.query(Employee).filter(Employee.id == data['employee_id']).first()
                 if not employee:

@@ -30,7 +30,6 @@ class ScheduleSchema(BaseSchema):
                 "start_time": fields.String,
                 "end_time": fields.String,
                 "date": fields.String,
-                "tagged_ids": fields.Raw,
                 "employee_id": fields.Integer,
                 "employee": fields.Nested(employee_detail, allow_null=True),
                 "tagged_employees": fields.List(fields.Nested(tagged_employee))
@@ -47,7 +46,6 @@ class ScheduleSchema(BaseSchema):
             "end_time": fields.String(required=True, description="HH:MM:SS"),
             "date": fields.String(required=True, description="YYYY-MM-DD or ISO datetime"),
             "tagged_ids": fields.List(fields.Integer, required=False, default=[]),
-            "employee_id": fields.Integer(required=True),
         })
 
     @classmethod
@@ -93,7 +91,6 @@ class ScheduleSchema(BaseSchema):
             "start_time": fields.String,
             "end_time": fields.String,
             "date": fields.String,
-            "tagged_ids": fields.Raw,
             "employee_id": fields.Integer,
             "employee": fields.Nested(employee_detail, allow_null=True),
             "tagged_employees": fields.List(fields.Nested(tagged_employee))

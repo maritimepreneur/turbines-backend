@@ -53,6 +53,7 @@ class ScheduleCreate(Resource):
     @schedule_ns.expect(schedule_post_schema)
     @schedule_ns.marshal_with(schedule_response_schema)
     def post(self):
+        """Create a new schedule"""
         user_id = get_jwt_identity()
         claims = get_jwt()
         user_role = claims.get('role') 
