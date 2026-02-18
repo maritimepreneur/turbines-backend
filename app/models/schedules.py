@@ -30,7 +30,14 @@ class Schedule(db.Model):
             "description": self.description,
             "start_time": self.start_time.isoformat() if self.start_time else None,
             "end_time": self.end_time.isoformat() if self.end_time else None,
-            "date": self.date.isoformat() if self.date else None,
-            "tagged_ids": self.tagged_ids,
-            "employee_id": self.employee_id
+            "date": str(self.date) if self.date else None,
+            "tagged_ids": self.tagged_ids if self.tagged_ids else [],
+            "employee_id": self.employee_id,
+            # Basic employee info (dari relationship, gak perlu query)
+            "employee": {
+                "id": self.employee.id,
+                "full_name": self.employee.full_name,
+                "employee_code": self.employee.employee_code,
+                "email": self.employee.email
+            } if self.employee else None,
         }
