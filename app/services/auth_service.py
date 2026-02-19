@@ -21,14 +21,12 @@ class AuthService(BaseService):
             confirm_password = data.get('confirm_password')
             role_name = data.get('role', 'USER').upper()
 
-            # Validasi input
             if not all([username, email, password, confirm_password]):
                 return response(400, "All fields (Username, Email, Password, Confirm Password) are required")
 
             if password != confirm_password:
                 return response(400, "Password and Confirm Password do not match")
 
-            # Cek user sudah ada
             existing_user = self.db.query(User).filter(
                 (User.email == email) | (User.username == username)
             ).first()
@@ -36,13 +34,11 @@ class AuthService(BaseService):
             if existing_user:
                 return response(409, "Username or Email already registered")
 
-            # Validasi role
             try:
                 role_enum = UserRole[role_name]
             except KeyError:
                 return response(400, f"Role {role_name} is not valid")
 
-            # Buat user baru
             new_user = User(
                 username=username,
                 email=email,
@@ -72,13 +68,11 @@ class AuthService(BaseService):
             if not identifier or not password:
                 return response(400, "Identifier and password are required")
             
-            # Authenticate user
             user = self._authenticate_user(identifier, password)
             
             if not user:
                 return response(401, "Invalid credentials")
             
-            # Generate tokens
             additional_claims = {
                 "role": user.role.value if hasattr(user.role, "value") else user.role,
                 "username": user.username

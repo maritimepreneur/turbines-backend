@@ -7,14 +7,12 @@ from app.utils import role_required
 
 vendor_ns = Namespace("vendors", description="Vendor Management")
 
-# Inisialisasi service
 vendor_svc = VendorService(db.session)
 
-# Buat schema terpisah - PASTIKAN SEMUA METHOD ADA
 vendor_response_schema = VendorSchema.get_schema(vendor_ns)
 vendor_post_schema = VendorSchema.post_schema(vendor_ns)
-vendor_filter_schema = VendorSchema.filter_schema(vendor_ns)  # Sekarang method ini ada
-vendor_filter_response = VendorSchema.filter_response_schema(vendor_ns)  # Sekarang method ini ada
+vendor_filter_schema = VendorSchema.filter_schema(vendor_ns)
+vendor_filter_response = VendorSchema.filter_response_schema(vendor_ns) 
 vendor_list_schema = VendorSchema.list_schema(vendor_ns)
 
 @vendor_ns.route("/")
@@ -54,7 +52,6 @@ class VendorCreate(Resource):
 
 @vendor_ns.route("/<int:id>")
 class VendorDetail(Resource):
-    # TANPA role required untuk GET (sesuai permintaan)
     @vendor_ns.marshal_with(vendor_response_schema)
     def get(self, id):
         """Get vendor by ID - Public Access"""
@@ -65,7 +62,6 @@ class VendorDetail(Resource):
             
         return result
     
-    # Tetap dengan role required untuk PUT dan DELETE
     @jwt_required()
     @role_required("ADMIN", "BIZDEV", "FINANCE")
     @vendor_ns.doc(security="Bearer Auth")

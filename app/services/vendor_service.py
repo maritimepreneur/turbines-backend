@@ -16,7 +16,6 @@ class VendorService(BaseService):
             .all()
         )
 
-        # GUNAKAN to_dict() yang sudah ada di model
         vendors_list = [vendor.to_dict() for vendor in vendors]
 
         return response(200, "Action Success", vendors_list)
@@ -34,14 +33,11 @@ class VendorService(BaseService):
         if not vendor:
             return response(404, "Vendor not found")
 
-        # GUNAKAN to_dict()
         return response(200, "Action Success", vendor.to_dict())
 
     def create(self, data):
-        # Validasi dan konversi company_type
         company_type_str = data.get("company_type", "").upper().replace(" ", "_")
         
-        # Mapping untuk company_type (sesuaikan dengan enum di model)
         company_type_mapping = {
             "OTHER": CompanyType.OTHER,
             "GOVERMENT": CompanyType.GOVERMENT,
@@ -57,17 +53,13 @@ class VendorService(BaseService):
             if company_type_str in company_type_mapping:
                 data["company_type"] = company_type_mapping[company_type_str]
             else:
-                # Coba langsung pakai value dari string
                 data["company_type"] = CompanyType[company_type_str]
         except (KeyError, AttributeError):
-            # Kembalikan error jika company_type tidak valid
             valid_values = [e.name for e in CompanyType]
             return response(400, f"Invalid company_type. Valid values are: {valid_values}")
         
-        # Set partner_type ke VENDOR
         data["partner_type"] = PartnerType.VENDOR
         
-        # Konversi service dan goods ke list jika perlu
         if "service" in data:
             if isinstance(data["service"], str):
                 try:
@@ -85,13 +77,10 @@ class VendorService(BaseService):
                     data["goods"] = []
             elif not isinstance(data["goods"], list):
                 data["goods"] = []
-        
-        # Panggil create dari BaseService
+
         result = super().create(data)
         
-        # Jika berhasil, kembalikan data vendor yang baru dibuat
         if result.get("success") and "data" in result:
-            # Ambil vendor yang baru dibuat
             vendor_id = result["data"].id if hasattr(result["data"], 'id') else result["data"]
             new_vendor = self.db.query(self.model).get(vendor_id)
             if new_vendor:

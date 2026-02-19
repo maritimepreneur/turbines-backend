@@ -18,6 +18,7 @@ attendance_filter_schema = AttendanceSchema.filter_schema(attendance_ns)
 attendance_filter_response = AttendanceSchema.filter_response_schema(attendance_ns)
 
 absent_list_response = AttendanceSchema.absent_list_response_schema(attendance_ns)
+history_response = AttendanceSchema.history_response_schema(attendance_ns)
 
 
 @attendance_ns.route("/")
@@ -102,3 +103,13 @@ class ToggleChecked(Resource):
     def patch(self, id):
         """Toggle checked status (checked ↔ unchecked)"""
         return attendance_svc.toggle_checked(id)
+
+@attendance_ns.route("/employee-history/<int:id>")
+class EmployeeAttendanceHistory(Resource):
+    @jwt_required()
+    @role_required("ADMIN", "HR")
+    @attendance_ns.doc(security="Bearer Auth")
+    @attendance_ns.response(200, "Success", history_response)
+    def get(self, id):
+        """Get complete attendance history for a specific employee (Admin/HR Only)"""
+        return attendance_svc.get_employee_attendance_history(id)

@@ -15,7 +15,6 @@ class DocumentService(BaseService):
 
     def get_document_by_id(self, id):
         """Get One dengan Serialisasi"""
-        # Gunakan _get_by_id agar mendapatkan instance Model, bukan hasil fungsi response()
         doc = self._get_by_id(id) 
     
         if not doc:
@@ -25,7 +24,6 @@ class DocumentService(BaseService):
 
     def create(self, data):
         """Create Document dengan Validasi Enum"""
-        # Konversi string ke Enum jika data dikirim sebagai string (misal: "INVOICE")
         if 'document_type' in data and isinstance(data['document_type'], str):
             try:
                 data['document_type'] = DocumentType[data['document_type']]
@@ -36,7 +34,6 @@ class DocumentService(BaseService):
 
     def update(self, id, data):
         """Update Document"""
-        # Validasi Enum saat update
         if 'document_type' in data and isinstance(data['document_type'], str):
             try:
                 data['document_type'] = DocumentType[data['document_type']]
@@ -54,16 +51,11 @@ class DocumentService(BaseService):
         try:
             q = self.db.query(Document)
             
-            # 1. Search Logic (Mencari berdasarkan Nama Dokumen)
             if s := payload.get('search'):
                 term = f"%{s}%"
-                # Menggunakan ilike untuk case-insensitive search pada nama
                 q = q.filter(Document.name.ilike(term))
 
-            # 2. Filter Logic
-            # Filter berdasarkan Tipe Dokumen
-            if doc_types := payload.get('document_types'): # Expecting list of strings
-                # Konversi list string ke list Enum untuk query
+            if doc_types := payload.get('document_types'):
                 enum_list = []
                 for dt in doc_types:
                     if dt in DocumentType.__members__:
@@ -71,16 +63,13 @@ class DocumentService(BaseService):
                 if enum_list:
                     q = q.filter(Document.document_type.in_(enum_list))
             
-            # Filter berdasarkan Project ID
             if project_id := payload.get('project_id'):
                 q = q.filter(Document.project_id == project_id)
 
-            # 3. Sorting Logic
             sort_col = getattr(Document, payload.get('sort_by', 'id'), Document.id)
             sort_dir = payload.get('sort_order', 'DESC')
             q = q.order_by(asc(sort_col) if sort_dir == 'ASC' else desc(sort_col))
-            
-            # 4. Pagination Logic
+        
             page = payload.get('page_number', 1)
             size = payload.get('page_size', 25)
             total = q.count()

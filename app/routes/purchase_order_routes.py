@@ -5,13 +5,10 @@ from app.services.purchase_order_service import PurchaseOrderService
 from app.schemas.purchase_order_schema import PurchaseOrderSchema
 from app.utils import role_required
 
-# 1. Inisialisasi Namespace
 purchase_order_ns = Namespace("purchase-orders", description="Purchase Order Management")
 
-# 2. Inisialisasi Service
 service = PurchaseOrderService(db.session)
 
-# 3. Ambil Schema
 purchase_response_schema = PurchaseOrderSchema.get_schema(purchase_order_ns)
 purchase_post_schema = PurchaseOrderSchema.post_schema(purchase_order_ns)
 

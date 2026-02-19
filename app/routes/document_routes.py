@@ -5,19 +5,14 @@ from app.services.document_service import DocumentService
 from app.schemas.document_schema import DocumentSchema
 from app.utils import role_required
 
-# Inisialisasi Namespace
 document_ns = Namespace("documents", description="Document Management")
 document_svc = DocumentService(db.session)
 
-# Definisi Schema
 document_response_schema = DocumentSchema.get_schema(document_ns)
 document_post_schema = DocumentSchema.post_schema(document_ns)
 document_list_response = DocumentSchema.list_response_schema(document_ns)
 document_filter_schema = DocumentSchema.filter_schema(document_ns)
 document_filter_response = DocumentSchema.filter_response_schema(document_ns)
-
-# Note: Asumsi schema filter menggunakan payload dinamis atau schema dasar
-# Jika kamu ingin validasi ketat untuk filter, tambahkan filter_schema di DocumentSchema
 
 @document_ns.route("/")
 class DocumentList(Resource):
@@ -33,8 +28,8 @@ class DocumentList(Resource):
     @jwt_required()
     @role_required("ADMIN", "HR", "BISDEV")
     @document_ns.doc(security="Bearer Auth")
-    @document_ns.expect(document_filter_schema) # Menampilkan form filter di Swagger
-    @document_ns.response(200, "Success Filter Data", document_filter_response) # Menampilkan hasil + pagination
+    @document_ns.expect(document_filter_schema)
+    @document_ns.response(200, "Success Filter Data", document_filter_response)
     def post(self):
         """ Cari dan Filter dokumen (Search, Sort, Pagination) """
         return document_svc.get_document_list_filter(document_ns.payload)

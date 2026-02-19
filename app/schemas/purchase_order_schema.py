@@ -14,7 +14,6 @@ class PurchaseOrderSchema(BaseSchema):
                 "partner_id": fields.Integer,
                 "contact_id": fields.Integer,
                 "quotation_id": fields.Integer,
-                # Relasi Nested (Menampilkan data objek terkait)
                 "partner": fields.Nested(namespace.model("POPartner", {
                     "id": fields.Integer,
                     "name": fields.String,

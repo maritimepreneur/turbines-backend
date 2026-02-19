@@ -17,18 +17,14 @@ class PurchaseOrderService(BaseService):
         TASK: Create Purchase Order
         Menghasilkan nomor purchase otomatis sebelum menyimpan ke database.
         """
-        # 1. Generate nomor purchase otomatis (PURCHASE-2026-0001)
         data['number'] = self.generate_purchase_number()
         
-        # 2. Simpan menggunakan method create dari BaseService
         return self.create(data)
 
     def generate_purchase_number(self):
         """
         Logika untuk membuat nomor purchase yang unik berdasarkan tahun dan ID terakhir.
         """
-        
-        # Menggunakan self.db (Session) untuk query data terakhir
         last_purchase = self.db.query(Purchase_Order).order_by(desc(Purchase_Order.id)).first()
         
         if not last_purchase:
@@ -43,7 +39,6 @@ class PurchaseOrderService(BaseService):
         TASK: Edit Purchase Order
         Memastikan nomor purchase tidak ikut diubah saat update data lain.
         """
-        # Hapus 'number' dari data agar tidak terjadi perubahan nomor manual
         data.pop('number', None)
             
         return self.update(id, data)
