@@ -65,7 +65,7 @@ class Invoice(db.Model):
             "overheads": float(self.overheads),
             "discount": float(self.discount),
             "grand_total": float(self.grand_total),
-            "payment_details": float(self.payment_details),
+            "payment_details": str(self.payment_details) if self.payment_details else "",
             "agreement_letter": self.agreement_letter,
             "contact_id": self.contact_id,
             "partner_id": self.partner_id,

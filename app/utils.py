@@ -1,14 +1,15 @@
 from functools import wraps
 from flask_jwt_extended import verify_jwt_in_request, get_jwt
+from flask import jsonify
 
+def response(code: int = None, message: str = None, data: dict = None):
+    _response = {"message": message}
+    if code is not None:
+        _response.update({"code": code})
+    if data is not None:
+        _response.update({"data": data})
+    return _response, code
 
-def response(code : int = None, message : str = None, data : dict = None) :
-    _response = {"message" : message}
-    if code :
-        _response.update({"code" : code})
-    if data : 
-        _response.update({"data" : data})
-    return _response
 
 def role_required(*allowed_roles):
     def decorator(fn):

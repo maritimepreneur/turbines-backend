@@ -7,9 +7,10 @@ from app.utils import role_required
 
 invoice_ns = Namespace("invoices", description="Invoice Management")
 invoice_svc = InvoiceService(db.session)
-
 invoice_response_schema = InvoiceSchema.get_schema(invoice_ns)
 invoice_post_schema = InvoiceSchema.post_schema(invoice_ns)
+invoice_filter_schema = InvoiceSchema.filter_schema(invoice_ns)
+invoice_filter_response = InvoiceSchema.filter_response_schema(invoice_ns)
 
 @invoice_ns.route("/")
 class InvoiceList(Resource):
@@ -20,6 +21,15 @@ class InvoiceList(Resource):
     def get(self):
         """ Get all invoices """
         return invoice_svc.get_all_invoices()
+
+    @jwt_required()
+    @role_required("ADMIN", "FINANCE", "OPERATION")
+    @invoice_ns.doc(security="Bearer Auth")
+    @invoice_ns.expect(invoice_filter_schema)
+    @invoice_ns.response(200, "Success", invoice_filter_response)
+    def post(self):
+        """ Search and Filter Invoices with Pagination """
+        return invoice_svc.get_invoice_list_filter(invoice_ns.payload)
 
 @invoice_ns.route("/create")
 class InvoiceCreate(Resource):

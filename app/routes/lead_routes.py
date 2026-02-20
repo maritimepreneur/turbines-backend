@@ -7,7 +7,6 @@ from app.utils import role_required
 
 lead_ns = Namespace("leads", description="Lead Management")
 lead_svc = LeadService(db.session)
-
 lead_response_schema = LeadSchema.get_schema(lead_ns)
 lead_post_schema = LeadSchema.post_schema(lead_ns)
 lead_filter_schema = LeadSchema.filter_schema(lead_ns)

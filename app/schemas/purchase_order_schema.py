@@ -24,7 +24,7 @@ class PurchaseOrderSchema(BaseSchema):
                 }), allow_null=True),
                 "quotation": fields.Nested(namespace.model("POQuotation", {
                     "id": fields.Integer,
-                    "number": fields.String,
+                    "summary": fields.String,
                 }), allow_null=True),
             }, ordered=True))
         }, ordered=True)
@@ -41,15 +41,29 @@ class PurchaseOrderSchema(BaseSchema):
         }, ordered=True)
 
     @classmethod
+    def filter_schema(cls, namespace: Model):
+        """Schema untuk Request Body Search & Filter Purchase Order"""
+        return namespace.model("PurchaseOrderFilterRequest", {
+            "page_size": fields.Integer(required=True, default=25),
+            "page_number": fields.Integer(required=True, default=1),
+            "sort_by": fields.String(required=True, default="id"),
+            "sort_order": fields.String(required=True, default="DESC"),
+            "search": fields.String(description="Search by PO Number or Partner Name"),
+            "partner_ids": fields.List(fields.Integer, description="Filter by multiple Partner IDs"),
+            "quotation_ids": fields.List(fields.Integer, description="Filter by multiple Quotation IDs")
+        }, ordered=True)
+
+    @classmethod
     def filter_response_schema(cls, namespace: Model):
-        """Schema untuk List Response (Jika kamu butuh fitur GET ALL dengan pagination)"""
+        """Schema untuk List Response dengan Pagination"""
         po_item_model = namespace.model("PurchaseOrderFilterItem", {
             "id": fields.Integer,
             "number": fields.String,
             "attachments": fields.String,
             "partner_name": fields.String,
             "contact_name": fields.String,
-            "quotation_number": fields.String
+            "quotation_summary": fields.String,
+            "created_at": fields.String
         }, ordered=True)
 
         pagination_model = namespace.model("POPaginationInfo", {

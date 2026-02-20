@@ -7,10 +7,8 @@ from app.utils import role_required
 
 partner_ns = Namespace("partners", description="Partner Management")
 partner_svc = PartnerService(db.session)
-
 partner_response_schema = PartnerSchema.get_schema(partner_ns)
 partner_post_schema = PartnerSchema.post_schema(partner_ns)
-
 partner_filter_schema = PartnerSchema.filter_schema(partner_ns)
 partner_filter_response = PartnerSchema.filter_response_schema(partner_ns)
 

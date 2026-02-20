@@ -47,5 +47,3 @@ class Contact(db.Model):
             "partner_id": self.partner_id,
             "created_at": self.created_at.isoformat() if self.created_at else None
         }
-        
-    """" Disini buat dict kalau perlu """

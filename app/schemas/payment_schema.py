@@ -14,7 +14,6 @@ class PaymentSchema(BaseSchema):
                 "notes": fields.String,
                 "attachments": fields.String,
                 "invoice_id": fields.Integer,
-                # Relasi Nested
                 "invoice": fields.Nested(namespace.model("PaymentInvoice", {
                     "id": fields.Integer,
                     "number": fields.String,

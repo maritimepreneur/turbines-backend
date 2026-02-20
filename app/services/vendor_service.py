@@ -1,89 +1,68 @@
+from sqlalchemy import or_, desc, asc
 from app.services.base_service import BaseService
 from app.models.partners import Partner, PartnerType, CompanyType
 from app.utils import response
 import json
 
 class VendorService(BaseService):
-
     def __init__(self, db):
         super().__init__(db, Partner)
 
-    def get_all(self):
-        vendors = (
-            self.db.query(self.model)
-            .filter(self.model.partner_type == PartnerType.VENDOR)
-            .order_by(self.model.created_at.desc())
-            .all()
-        )
-
-        vendors_list = [vendor.to_dict() for vendor in vendors]
-
-        return response(200, "Action Success", vendors_list)
-
-    def get_by_id(self, vendor_id: int):
-        vendor = (
-            self.db.query(self.model)
-            .filter(
-                self.model.id == vendor_id,
-                self.model.partner_type == PartnerType.VENDOR
-            )
-            .first()
-        )
-
-        if not vendor:
-            return response(404, "Vendor not found")
-
-        return response(200, "Action Success", vendor.to_dict())
-
-    def create(self, data):
-        company_type_str = data.get("company_type", "").upper().replace(" ", "_")
-        
-        company_type_mapping = {
-            "OTHER": CompanyType.OTHER,
-            "GOVERMENT": CompanyType.GOVERMENT,
-            "PRIVATE": CompanyType.PRIVATE,
-            "STATEOWNED": CompanyType.STATEOWNED,
-            "STATE_OWNED": CompanyType.STATEOWNED,
-            "PUBLIC": CompanyType.PUBLIC,
-            "NONPROFIT": CompanyType.NONPROFIT,
-            "NON_PROFIT": CompanyType.NONPROFIT,
-        }
-        
+    def get_vendor_list_filter(self, payload):
         try:
-            if company_type_str in company_type_mapping:
-                data["company_type"] = company_type_mapping[company_type_str]
-            else:
-                data["company_type"] = CompanyType[company_type_str]
-        except (KeyError, AttributeError):
-            valid_values = [e.name for e in CompanyType]
-            return response(400, f"Invalid company_type. Valid values are: {valid_values}")
-        
-        data["partner_type"] = PartnerType.VENDOR
-        
-        if "service" in data:
-            if isinstance(data["service"], str):
-                try:
-                    data["service"] = json.loads(data["service"])
-                except json.JSONDecodeError:
-                    data["service"] = []
-            elif not isinstance(data["service"], list):
-                data["service"] = []
-        
-        if "goods" in data:
-            if isinstance(data["goods"], str):
-                try:
-                    data["goods"] = json.loads(data["goods"])
-                except json.JSONDecodeError:
-                    data["goods"] = []
-            elif not isinstance(data["goods"], list):
-                data["goods"] = []
+            page_size = payload.get('page_size', 25)
+            page_number = payload.get('page_number', 1)
+            sort_by = payload.get('sort_by', 'id')
+            sort_order = payload.get('sort_order', 'DESC')
+            search_query = payload.get('search', '')
+            company_types_filter = payload.get('company_types', [])
+            industries_filter = payload.get('industries', [])
+            query = self.db.query(Partner).filter(Partner.partner_type == PartnerType.VENDOR)
 
-        result = super().create(data)
-        
-        if result.get("success") and "data" in result:
-            vendor_id = result["data"].id if hasattr(result["data"], 'id') else result["data"]
-            new_vendor = self.db.query(self.model).get(vendor_id)
-            if new_vendor:
-                result["data"] = new_vendor.to_dict()
-        
-        return result
+            if search_query:
+                query = query.filter(
+                    or_(
+                        Partner.name.ilike(f"%{search_query}%"),
+                        Partner.initials.ilike(f"%{search_query}%"),
+                        Partner.industry.ilike(f"%{search_query}%")
+                    )
+                )
+
+            if company_types_filter:
+                valid_enums = []
+                for ct in company_types_filter:
+                    key = ct.upper().replace(" ", "_")
+                    if key in CompanyType.__members__:
+                        valid_enums.append(CompanyType[key])
+                if valid_enums:
+                    query = query.filter(Partner.company_type.in_(valid_enums))
+
+            if industries_filter:
+                conditions = [Partner.industry.ilike(f"%{i}%") for i in industries_filter if i]
+                if conditions:
+                    query = query.filter(or_(*conditions))
+
+            sort_column = getattr(Partner, sort_by) if hasattr(Partner, sort_by) else Partner.id
+            query = query.order_by(desc(sort_column) if sort_order.upper() == 'DESC' else asc(sort_column))
+            total_items = query.count()
+            total_pages = (total_items + page_size - 1) // page_size
+            offset = (page_number - 1) * page_size
+            raw_data = query.offset(offset).limit(page_size).all()
+            
+            result = {
+                "list": [v.to_dict() for v in raw_data],
+                "pagination": {
+                    "current_page": page_number,
+                    "page_size": page_size,
+                    "total_pages": total_pages,
+                    "total_items": total_items
+                }
+            }
+            return response(200, "Success", result)
+
+        except Exception as e:
+            return response(500, f"Error processing vendor filter: {str(e)}")
+
+    def create_vendor(self, data):
+        data["partner_type"] = PartnerType.VENDOR
+        return self.create(data)

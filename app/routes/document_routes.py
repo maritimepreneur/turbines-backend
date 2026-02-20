@@ -7,7 +7,6 @@ from app.utils import role_required
 
 document_ns = Namespace("documents", description="Document Management")
 document_svc = DocumentService(db.session)
-
 document_response_schema = DocumentSchema.get_schema(document_ns)
 document_post_schema = DocumentSchema.post_schema(document_ns)
 document_list_response = DocumentSchema.list_response_schema(document_ns)

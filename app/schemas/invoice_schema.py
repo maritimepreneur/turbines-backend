@@ -22,7 +22,6 @@ class InvoiceSchema(BaseSchema):
                 "grand_total": fields.String(description="Numeric string"),
                 "payment_details": fields.String,
                 "agreement_letter": fields.String,
-                
                 "contact": fields.Nested(namespace.model("InvoiceContact", {
                     "id": fields.Integer,
                     "name": fields.String,
@@ -60,3 +59,51 @@ class InvoiceSchema(BaseSchema):
             "partner_id": fields.Integer(required=False, allow_null=True),
             "purchase_order_id": fields.Integer(required=False, allow_null=True),
         })
+
+    @classmethod
+    def filter_schema(cls, namespace: Model):
+        """Schema untuk Request Body Search & Filter Invoice"""
+        return namespace.model("InvoiceFilterRequest", {
+            "page_size": fields.Integer(required=True, default=25),
+            "page_number": fields.Integer(required=True, default=1),
+            "sort_by": fields.String(required=True, default="id"),
+            "sort_order": fields.String(required=True, default="DESC"),
+            "search": fields.String(description="Search by Invoice Number, PO Number, or Partner Name"),
+            "partner_ids": fields.List(fields.Integer, description="Filter by multiple Partner IDs"),
+            "start_date": fields.String(description="Start Date (YYYY-MM-DD) for Period"),
+            "end_date": fields.String(description="End Date (YYYY-MM-DD) for Period"),
+            "min_amount": fields.Float(description="Minimum total amount"),
+            "max_amount": fields.Float(description="Maximum total amount")
+        }, ordered=True)
+
+    @classmethod
+    def filter_response_schema(cls, namespace: Model):
+        """Schema untuk List Response dengan Pagination"""
+        invoice_item_model = namespace.model("InvoiceFilterItem", {
+            "id": fields.Integer,
+            "number": fields.Integer,
+            "period": fields.String,
+            "due_date": fields.String,
+            "total_amount": fields.String,
+            "grand_total": fields.String,
+            "partner_name": fields.String,
+            "contact_name": fields.String,
+            "po_number": fields.String
+        }, ordered=True)
+
+        pagination_model = namespace.model("InvoicePaginationInfo", {
+            "current_page": fields.Integer,
+            "page_size": fields.Integer,
+            "total_pages": fields.Integer,
+            "total_items": fields.Integer
+        }, ordered=True)
+
+        return namespace.model("InvoiceFilterResponse", {
+            "message": fields.String(default="Success"),
+            "code": fields.Integer(default=200),
+            "status": fields.String(default="success"),
+            "data": fields.Nested(namespace.model("InvoiceFilterData", {
+                "list": fields.List(fields.Nested(invoice_item_model)),
+                "pagination": fields.Nested(pagination_model)
+            }))
+        }, ordered=True)

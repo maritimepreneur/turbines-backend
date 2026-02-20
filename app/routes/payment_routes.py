@@ -8,8 +8,6 @@ from app.utils import role_required
 
 payment_ns = Namespace("payments", description="Payment Management")
 service = PaymentService(db.session)
-
-# Load Schemas
 payment_detail_schema = PaymentSchema.get_schema(payment_ns)
 payment_post_schema = PaymentSchema.post_schema(payment_ns)
 payment_filter_schema = PaymentSchema.filter_response_schema(payment_ns)

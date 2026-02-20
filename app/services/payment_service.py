@@ -74,7 +74,6 @@ class PaymentService:
 
         for key, value in data.items():
             if hasattr(payment, key):
-                # Khusus untuk field date, konversi jika value-nya string
                 if key == 'date' and isinstance(value, str):
                     value = datetime.strptime(value, '%Y-%m-%d').date()
                 setattr(payment, key, value)

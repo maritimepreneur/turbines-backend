@@ -7,16 +7,12 @@ from app.utils import role_required
 
 attendance_ns = Namespace("attendances", description="Attendance Management")
 attendance_svc = AttendanceService(db.session)
-
 attendance_response_schema = AttendanceSchema.get_schema(attendance_ns)
-
 clock_in_schema = AttendanceSchema.clock_in_schema(attendance_ns)
 clock_out_schema = AttendanceSchema.clock_out_schema(attendance_ns)
-
 today_status_schema = AttendanceSchema.today_status_schema(attendance_ns)
 attendance_filter_schema = AttendanceSchema.filter_schema(attendance_ns)
 attendance_filter_response = AttendanceSchema.filter_response_schema(attendance_ns)
-
 absent_list_response = AttendanceSchema.absent_list_response_schema(attendance_ns)
 history_response = AttendanceSchema.history_response_schema(attendance_ns)
 
@@ -104,7 +100,7 @@ class ToggleChecked(Resource):
         """Toggle checked status (checked ↔ unchecked)"""
         return attendance_svc.toggle_checked(id)
 
-@attendance_ns.route("/employee-history/<int:id>")
+@attendance_ns.route("/employee/<int:id>")
 class EmployeeAttendanceHistory(Resource):
     @jwt_required()
     @role_required("ADMIN", "HR")

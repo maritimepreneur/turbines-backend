@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import or_, desc, asc
 from app.models.quotations import Quotation
 from app.models.contacts import Contact
 from app.models.partners import Partner
@@ -32,15 +33,79 @@ class QuotationService(BaseService):
         quotation = self._get_by_id(quotation_id)
         self.validate_fk(updated_data)
         if not quotation:
-            return response(404, quotation_id)
+            return response(404, f"Quotation ID {quotation_id} not found")
         return super().update(quotation_id, updated_data)
     
     def validate_fk(self, quotation_data):
-        if quotation_data("contact_id") and not self.db.get(Contact, quotation_data["contact_id"]):
+        """ Existing validation logic """
+        if quotation_data.get("contact_id") and not self.db.get(Contact, quotation_data["contact_id"]):
             return response(404, "Invalid contact_id")
         
-        if quotation_data("partner_id") and not self.db.get(Partner,quotation_data["partner_id"]):
+        if quotation_data.get("partner_id") and not self.db.get(Partner, quotation_data["partner_id"]):
             return response(404, "Invalid partner_id")
         
-        if quotation_data("lead_id") and not self.db.get(Lead, quotation_data["lead_id"]):
+        if quotation_data.get("lead_id") and not self.db.get(Lead, quotation_data["lead_id"]):
             return response(404, "Invalid lead_id")
+
+    def get_quotation_list_filter(self, payload):
+        """ New feature: Search, Filter, and Pagination for Quotations """
+        try:
+            page_size = payload.get('page_size', 25)
+            page_number = payload.get('page_number', 1)
+            sort_by = payload.get('sort_by', 'id')
+            sort_order = payload.get('sort_order', 'DESC')
+            search_query = payload.get('search', '')
+            min_amount = payload.get('min_amount')
+            max_amount = payload.get('max_amount')
+            partner_ids = payload.get('partner_ids', [])
+
+            query = self.db.query(Quotation)\
+                .outerjoin(Partner, Quotation.partner_id == Partner.id)\
+                .outerjoin(Lead, Quotation.lead_id == Lead.id)\
+                .outerjoin(Contact, Quotation.contact_id == Contact.id)
+
+            if search_query:
+                query = query.filter(
+                    or_(
+                        Quotation.summary.ilike(f"%{search_query}%"),
+                        Partner.name.ilike(f"%{search_query}%"),
+                        Lead.name.ilike(f"%{search_query}%")
+                    )
+                )
+
+            if min_amount is not None:
+                query = query.filter(Quotation.total_amount >= min_amount)
+            if max_amount is not None:
+                query = query.filter(Quotation.total_amount <= max_amount)
+
+            if partner_ids:
+                query = query.filter(Quotation.partner_id.in_(partner_ids))
+
+            sort_column = getattr(Quotation, sort_by) if hasattr(Quotation, sort_by) else Quotation.id
+            query = query.order_by(desc(sort_column) if sort_order.upper() == 'DESC' else asc(sort_column))
+            total_items = query.count()
+            total_pages = (total_items + page_size - 1) // page_size
+            offset = (page_number - 1) * page_size
+            raw_data = query.offset(offset).limit(page_size).all()
+            
+            data_list = []
+            for q in raw_data:
+                item = q.to_dict()
+                item["contact_name"] = q.contact.name if q.contact else None
+                item["partner_name"] = q.partner.name if q.partner else None
+                item["lead_name"] = q.lead.name if q.lead else None
+                data_list.append(item)
+
+            result = {
+                "list": data_list,
+                "pagination": {
+                    "current_page": page_number,
+                    "page_size": page_size,
+                    "total_pages": total_pages,
+                    "total_items": total_items
+                }
+            }
+            return response(200, "Success", result)
+
+        except Exception as e:
+            return response(500, f"Error processing quotation filter: {str(e)}")
