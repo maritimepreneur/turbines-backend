@@ -159,7 +159,6 @@ class LeadService(BaseService):
         try:
             from app.models.leads import Stages
             
-            # Validate stage
             if new_stage.upper() not in [s.name for s in Stages]:
                 return response(400, f"Invalid stage. Valid stages: {[s.name for s in Stages]}")
             

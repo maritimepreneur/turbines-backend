@@ -236,3 +236,20 @@ class AttendanceService(BaseService):
 
         except Exception as e:
             return response(500, f"Error getting absent list: {str(e)}")
+
+    def get_employee_attendance_history(self, employee_id: int):
+        try:
+            employee = self.db.query(Employee).filter(Employee.id == employee_id).first()
+            if not employee:
+                return response(404, "Employee not found")
+
+            history = self.db.query(Attendance).filter(
+                Attendance.employee_id == employee_id
+            ).order_by(desc(Attendance.date)).all()
+
+            data_list = [item.to_dict() for item in history]
+
+            return response(200, f"Success retrieving history for {employee.full_name}", data_list)
+
+        except Exception as e:
+            return response(500, f"Error getting history: {str(e)}")

@@ -33,7 +33,6 @@ class Schedule(db.Model):
             "date": str(self.date) if self.date else None,
             "tagged_ids": self.tagged_ids if self.tagged_ids else [],
             "employee_id": self.employee_id,
-            # Basic employee info (dari relationship, gak perlu query)
             "employee": {
                 "id": self.employee.id,
                 "full_name": self.employee.full_name,

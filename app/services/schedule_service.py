@@ -50,7 +50,6 @@ class ScheduleService(BaseService):
     
     def create_schedule(self, user_id: int, user_role: str, data: dict):
         try:
-            # For USER role, employee_id is derived from user_id. For ADMIN/HR/OPERATION, employee_id must be provided in data.
             if user_role == "USER":
                 employee = self.db.query(Employee).filter(Employee.user_id == user_id).first()
                 if not employee:
@@ -59,7 +58,6 @@ class ScheduleService(BaseService):
             else:  
                 if 'employee_id' not in data or data['employee_id'] is None:
                     return response(400, "field employee_id is required for admin/HR")
-                # Validasi employee_id exist
                 employee = self.db.query(Employee).filter(Employee.id == data['employee_id']).first()
                 if not employee:
                     return response(404, f"Employee with id {data['employee_id']} not found. Please check employee list.")
@@ -123,10 +121,7 @@ class ScheduleService(BaseService):
             total_items = query.count()
             total_pages = (total_items + page_size - 1) // page_size
             offset = (page_number - 1) * page_size
-            
             raw_data = query.offset(offset).limit(page_size).all()
-            
-            # Enrich each schedule with tagged employees
             data = [self._enrich_schedule_with_tagged(schedule.to_dict()) for schedule in raw_data]
             
             result = {
@@ -147,7 +142,6 @@ class ScheduleService(BaseService):
     def get_my_schedules(self, user_id: int):
         """Get schedules for logged-in user (employee)"""
         try:
-            # Get employee from user_id
             employee = self.db.query(Employee).filter(Employee.user_id == user_id).first()
             if not employee:
                 return response(404, "Employee not found for this user")
@@ -157,7 +151,6 @@ class ScheduleService(BaseService):
                 .order_by(desc(Schedule.date))\
                 .all()
             
-            # Enrich each schedule with tagged employees
             data = [self._enrich_schedule_with_tagged(schedule.to_dict()) for schedule in schedules]
             return response(200, "Success", data)
             

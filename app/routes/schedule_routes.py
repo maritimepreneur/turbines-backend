@@ -7,7 +7,6 @@ from app.utils import role_required
 
 schedule_ns = Namespace("schedules", description="Schedule Management")
 schedule_svc = ScheduleService(db.session)
-
 schedule_response_schema = ScheduleSchema.get_schema(schedule_ns)
 schedule_post_schema = ScheduleSchema.post_schema(schedule_ns)
 schedule_filter_schema = ScheduleSchema.filter_schema(schedule_ns)

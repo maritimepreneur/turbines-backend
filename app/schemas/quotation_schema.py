@@ -9,8 +9,8 @@ class QuotationSchema(BaseSchema):
             "data": fields.Nested(namespace.model("Quotation", {
                 "id": fields.Integer,
                 "total_amount": fields.String(
-                description="Decimal/Numeric amount as string, example 15000.00",
-                required=True
+                    description="Decimal/Numeric amount as string, example 15000.00",
+                    required=True
                 ),
                 "document_content": fields.String,
                 "summary": fields.String,
@@ -49,3 +49,47 @@ class QuotationSchema(BaseSchema):
             "partner_id": fields.Integer(required=False, allow_null=True),
             "lead_id": fields.Integer(required=False, allow_null=True),
         })
+
+    @classmethod
+    def filter_schema(cls, namespace: Model):
+        """Schema untuk Request Body Search & Filter Quotation"""
+        return namespace.model("QuotationFilterRequest", {
+            "page_size": fields.Integer(required=True, default=25),
+            "page_number": fields.Integer(required=True, default=1),
+            "sort_by": fields.String(required=True, default="id"),
+            "sort_order": fields.String(required=True, default="DESC"),
+            "search": fields.String(description="Search by Summary, Partner Name, or Lead Name"),
+            "min_amount": fields.Float(description="Minimum total amount"),
+            "max_amount": fields.Float(description="Maximum total amount"),
+            "partner_ids": fields.List(fields.Integer, description="Filter by Partner IDs")
+        }, ordered=True)
+
+    @classmethod
+    def filter_response_schema(cls, namespace: Model):
+        """Schema untuk Response List Quotation dengan Pagination"""
+        quotation_item = namespace.model("QuotationFilterItem", {
+            "id": fields.Integer,
+            "total_amount": fields.String,
+            "summary": fields.String,
+            "contact_name": fields.String,
+            "partner_name": fields.String,
+            "lead_name": fields.String,
+            "created_at": fields.String
+        }, ordered=True)
+
+        pagination = namespace.model("QuotationPaginationInfo", {
+            "current_page": fields.Integer,
+            "page_size": fields.Integer,
+            "total_pages": fields.Integer,
+            "total_items": fields.Integer
+        }, ordered=True)
+
+        return namespace.model("QuotationFilterResponse", {
+            "message": fields.String(default="Success"),
+            "code": fields.Integer(default=200),
+            "status": fields.String(default="success"),
+            "data": fields.Nested(namespace.model("QuotationFilterData", {
+                "list": fields.List(fields.Nested(quotation_item)),
+                "pagination": fields.Nested(pagination)
+            }))
+        }, ordered=True)
