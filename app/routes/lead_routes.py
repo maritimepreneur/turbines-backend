@@ -25,6 +25,7 @@ class LeadContactList(Resource):
         """ Get list of contacts (ID & Name only) for dropdown """
         return lead_svc.get_contact_list_dropdown()
 
+
 @lead_ns.route("/partner-list")
 class LeadPartnerList(Resource):
     @jwt_required()
@@ -66,6 +67,14 @@ class LeadList(Resource):
     def post(self):
         """ Search and Filter Leads with Pagination """
         return lead_svc.get_lead_list_filter(lead_ns.payload)
+    
+    @jwt_required()
+    @role_required("ADMIN", "BIZDEV", "FINANCE", "OPERATION", "USER")
+    @lead_ns.doc(security="Bearer Auth")
+    @lead_ns.response(200, "Success Retrieve All Data", lead_response_schema)
+    def get(self):
+        """ Get all leads (Standard) """
+        return lead_svc.get_all_leads()
 
 @lead_ns.route("/create")
 class LeadCreate(Resource):

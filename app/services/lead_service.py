@@ -12,8 +12,9 @@ class LeadService(BaseService):
         super().__init__(db, Lead)
     
     def get_all_leads(self):
-        return self.get_all()
-    
+        data = [x.to_dict() for x in self.db.query(Lead).all()]
+        return response(200, "Success", data)
+
     def get_lead_by_id(self, lead_id: int):
         return self.get_by_id(lead_id)
     
