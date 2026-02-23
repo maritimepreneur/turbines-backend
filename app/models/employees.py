@@ -2,6 +2,7 @@ from enum import Enum
 from sqlalchemy import Column, Integer, String, Float, Date, UniqueConstraint, Enum as SQLEnum, ForeignKey
 from sqlalchemy.orm import relationship
 from app.database import db
+from app.models.meta.meta import Meta
 
 class Religion(Enum):
     ISLAM = "ISLAM"
@@ -28,7 +29,7 @@ class MaritalStatus(Enum):
     DIVORCED = "DIVORCED"
     SEPARATED = "SEPARATED"
 
-class Employee(db.Model):
+class Employee(db.Model, Meta):
     __tablename__ = "employees"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -108,4 +109,10 @@ class Employee(db.Model):
             "signature_img_url": self.signature_img_url,
             "signature_scale": self.signature_scale,
             "user_id": self.user_id,
+            "meta": {
+                "created_at": self.created_at.isoformat() if self.created_at else None,
+                "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+                "created_by": self.created_by,
+                "updated_by": self.updated_by
+            }
         }

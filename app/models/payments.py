@@ -1,8 +1,9 @@
 from app.database import db
 from sqlalchemy import Column, Integer, DATE, Numeric, String, Text, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
+from app.models.meta.meta import Meta
 
-class Payment(db.Model):
+class Payment(db.Model, Meta):
     __tablename__ = "payments"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -31,5 +32,11 @@ class Payment(db.Model):
             "code": self.code,
             "nominal": float(self.nominal),
             "notes": self.notes,
-            "attachments": self.attachments
+            "attachments": self.attachments,
+            "meta": {
+                "created_at": self.created_at.isoformat() if self.created_at else None,
+                "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+                "created_by": self.created_by,
+                "updated_by": self.updated_by
+            }
         }

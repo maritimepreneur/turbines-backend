@@ -18,6 +18,12 @@ class ExpenseSchema(BaseSchema):
                 required=True
                 ),
                 "notes": fields.String,
+                "meta": fields.Nested(namespace.model("Meta", {
+                    "created_at": fields.String(description="ISO 8601 Date"),
+                    "updated_at": fields.String(description="ISO 8601 Date"),
+                    "created_by": fields.Integer,
+                    "updated_by": fields.Integer,
+                })),
             }))
         })
     
@@ -59,7 +65,13 @@ class ExpenseSchema(BaseSchema):
             "code": fields.String,
             "status": fields.String,
             "total_amount": fields.String,
-            "notes": fields.String
+            "notes": fields.String,
+            "meta": fields.Nested(namespace.model("Meta", {
+                    "created_at": fields.String(description="ISO 8601 Date"),
+                    "updated_at": fields.String(description="ISO 8601 Date"),
+                    "created_by": fields.Integer,
+                    "updated_by": fields.Integer,
+                })),
         }, ordered=True)
 
         pagination_model = namespace.model("ExpensePaginationInfo", {

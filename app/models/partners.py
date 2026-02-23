@@ -4,6 +4,7 @@ from sqlalchemy import Column, Integer, String, Enum as SQLEnum, DateTime
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import func
+from app.models.meta.meta import Meta
 
 class CompanyType(Enum):
     OTHER = "Other"
@@ -18,7 +19,7 @@ class PartnerType(Enum):
     CLIENT = "Client"
     BOTH = "Both"
 
-class Partner(db.Model):
+class Partner(db.Model, Meta):
     __tablename__= "partners"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -37,8 +38,6 @@ class Partner(db.Model):
     )
     service = Column(JSONB, nullable=True, default=list, server_default="[]")
     goods = Column(JSONB, nullable=True, default=list, server_default="[]")
-    
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     contacts = relationship("Contact", back_populates="partner")
     leads = relationship("Lead", back_populates="partner")
@@ -59,5 +58,10 @@ class Partner(db.Model):
             "partner_type": self.partner_type.value if self.partner_type else None,
             "service": self.service,
             "goods": self.goods,
-            "created_at": self.created_at.isoformat() if self.created_at else None
+            "meta": {
+                "created_at": self.created_at.isoformat() if self.created_at else None,
+                "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+                "created_by": self.created_by,
+                "updated_by": self.updated_by
+            }
         }

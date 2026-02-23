@@ -32,6 +32,12 @@ class QuotationSchema(BaseSchema):
                     "period": fields.String,
                     "current_stages": fields.String,
                 })),
+                "meta": fields.Nested(namespace.model("Meta", {
+                    "created_at": fields.String(description="ISO 8601 Date"),
+                    "updated_at": fields.String(description="ISO 8601 Date"),
+                    "created_by": fields.Integer,
+                    "updated_by": fields.Integer,
+                })),
             }))
         })
     

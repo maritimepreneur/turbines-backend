@@ -3,12 +3,13 @@ from enum import Enum
 from sqlalchemy import Column, Integer, String, Numeric, ForeignKey, Enum as SQLEnum, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSONB
+from app.models.meta.meta import Meta
 
 class ItemType(Enum):
     SERVICE = "Service"
     GOODS = "Goods"
 
-class Item(db.Model):
+class Item(db.Model, Meta):
     __tablename__ = "items"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -51,5 +52,11 @@ class Item(db.Model):
             "billed_amount": float(self.billed_amount),
             "type": self.type.value if self.value else None,
             "amount_type": self.amount_type,
-            "attachments": self.attachments
+            "attachments": self.attachments,
+            "meta": {
+                "created_at": self.created_at.isoformat() if self.created_at else None,
+                "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+                "created_by": self.created_by,
+                "updated_by": self.updated_by
+            }
         }
