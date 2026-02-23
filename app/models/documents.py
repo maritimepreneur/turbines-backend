@@ -42,7 +42,6 @@ class Document(db.Model):
         nullable=True
     )
 
-    # Relationships
     project = relationship("Project", back_populates="documents")
     quotation = relationship("Quotation", back_populates="documents")
 

@@ -61,5 +61,3 @@ class Partner(db.Model):
             "goods": self.goods,
             "created_at": self.created_at.isoformat() if self.created_at else None
         }
-
-""" Disini buat dict kalau perlu """

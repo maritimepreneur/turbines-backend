@@ -42,14 +42,11 @@ class ContactSchema(BaseSchema):
             "page_number": fields.Integer(required=True, default=1, description="Current page number"),
             "sort_by": fields.String(required=True, default="id", description="Field to sort by"),
             "sort_order": fields.String(required=True, default="DESC", description="ASC or DESC"),
-            
             "search": fields.String(description="Global search by Name or Emails"),
-            
             "names": fields.List(fields.String, description="Filter by List of Names (Partial Match)"),
             "companies": fields.List(fields.String, description="Filter by List of Companies (Partial Match)"),
             "emails": fields.List(fields.String, description="Filter by List of Emails"),
             "phone_numbers": fields.List(fields.String, description="Filter by List of Phone Numbers"),
-            
             "start_date": fields.String(description="Start Date (YYYY-MM-DD)"),
             "end_date": fields.String(description="End Date (YYYY-MM-DD)"),
         })

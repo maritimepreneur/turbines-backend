@@ -1,6 +1,8 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, desc, asc
 from app.models.documents import Document, DocumentType
+from app.models.projects import Project
+from app.models.quotations import Quotation
 from app.services.base_service import BaseService
 from app.utils import response
 
@@ -15,7 +17,6 @@ class DocumentService(BaseService):
 
     def get_document_by_id(self, id):
         """Get One dengan Serialisasi"""
-        # Gunakan _get_by_id agar mendapatkan instance Model, bukan hasil fungsi response()
         doc = self._get_by_id(id) 
     
         if not doc:
@@ -25,7 +26,6 @@ class DocumentService(BaseService):
 
     def create(self, data):
         """Create Document dengan Validasi Enum"""
-        # Konversi string ke Enum jika data dikirim sebagai string (misal: "INVOICE")
         if 'document_type' in data and isinstance(data['document_type'], str):
             try:
                 data['document_type'] = DocumentType[data['document_type']]
@@ -36,7 +36,6 @@ class DocumentService(BaseService):
 
     def update(self, id, data):
         """Update Document"""
-        # Validasi Enum saat update
         if 'document_type' in data and isinstance(data['document_type'], str):
             try:
                 data['document_type'] = DocumentType[data['document_type']]
@@ -50,51 +49,66 @@ class DocumentService(BaseService):
         return super().delete(id)
 
     def get_document_list_filter(self, payload):
-        """Search & Filter dengan Pagination (Pola sama dengan Employee)"""
+        """Search, Filter, and Pagination for Documents"""
         try:
-            q = self.db.query(Document)
-            
-            # 1. Search Logic (Mencari berdasarkan Nama Dokumen)
-            if s := payload.get('search'):
-                term = f"%{s}%"
-                # Menggunakan ilike untuk case-insensitive search pada nama
-                q = q.filter(Document.name.ilike(term))
+            page_size = payload.get('page_size', 25)
+            page_number = payload.get('page_number', 1)
+            sort_by = payload.get('sort_by', 'id')
+            sort_order = payload.get('sort_order', 'DESC')
+            search_query = payload.get('search', '')
+            document_types = payload.get('document_types', [])
+            project_ids = payload.get('project_ids', [])
+            quotation_ids = payload.get('quotation_ids', [])
 
-            # 2. Filter Logic
-            # Filter berdasarkan Tipe Dokumen
-            if doc_types := payload.get('document_types'): # Expecting list of strings
-                # Konversi list string ke list Enum untuk query
+            query = self.db.query(Document)\
+                .outerjoin(Project, Document.project_id == Project.id)\
+                .outerjoin(Quotation, Document.quotation_id == Quotation.id)
+
+            if search_query:
+                query = query.filter(Document.name.ilike(f"%{search_query}%"))
+
+            if document_types:
                 enum_list = []
-                for dt in doc_types:
-                    if dt in DocumentType.__members__:
-                        enum_list.append(DocumentType[dt])
+                for dt in document_types:
+                    key = dt.upper().replace(" ", "_")
+                    if key in DocumentType.__members__:
+                        enum_list.append(DocumentType[key])
                 if enum_list:
-                    q = q.filter(Document.document_type.in_(enum_list))
-            
-            # Filter berdasarkan Project ID
-            if project_id := payload.get('project_id'):
-                q = q.filter(Document.project_id == project_id)
+                    query = query.filter(Document.document_type.in_(enum_list))
 
-            # 3. Sorting Logic
-            sort_col = getattr(Document, payload.get('sort_by', 'id'), Document.id)
-            sort_dir = payload.get('sort_order', 'DESC')
-            q = q.order_by(asc(sort_col) if sort_dir == 'ASC' else desc(sort_col))
-            
-            # 4. Pagination Logic
-            page = payload.get('page_number', 1)
-            size = payload.get('page_size', 25)
-            total = q.count()
-            
-            data = [x.to_dict() for x in q.offset((page - 1) * size).limit(size).all()]
+            if project_ids:
+                query = query.filter(Document.project_id.in_(project_ids))
+                
+            if quotation_ids:
+                query = query.filter(Document.quotation_id.in_(quotation_ids))
 
-            return response(200, "Success", {
-                "list": data,
+            sort_column = getattr(Document, sort_by) if hasattr(Document, sort_by) else Document.id
+            query = query.order_by(desc(sort_column) if sort_order.upper() == 'DESC' else asc(sort_column))
+
+            total_items = query.count()
+            total_pages = (total_items + page_size - 1) // page_size
+            offset = (page_number - 1) * page_size
+            
+            raw_data = query.offset(offset).limit(page_size).all()
+            
+            data_list = []
+            for doc in raw_data:
+                item = doc.to_dict()
+                item["project_name"] = doc.project.name if doc.project else None
+                item["quotation_summary"] = doc.quotation.summary if doc.quotation else None
+                data_list.append(item)
+
+            result = {
+                "list": data_list,
                 "pagination": {
-                    "current_page": page,
-                    "page_size": size,
-                    "total_pages": (total + size - 1) // size,
-                    "total_items": total
+                    "current_page": page_number,
+                    "page_size": page_size,
+                    "total_pages": total_pages,
+                    "total_items": total_items
                 }
-            })
+            }
+
+            return response(200, "Success", result)
+
         except Exception as e:
-            return response(500, f"Error: {str(e)}")
+            return response(500, f"Error processing document filter: {str(e)}")

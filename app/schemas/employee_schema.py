@@ -56,7 +56,6 @@ class EmployeeSchema(BaseSchema):
             "email": fields.String(required=True),
             "handphone": fields.String(required=True),
             "employee_code": fields.String(readonly=True, description="Auto-generated (EMP-XXXX)"),
-            
             "img_url": fields.String,
             "signature_img_url": fields.String,
             "signature_scale": fields.Float(default=1.0),

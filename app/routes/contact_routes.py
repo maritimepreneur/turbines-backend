@@ -7,13 +7,9 @@ from app.utils import role_required
 
 contact_ns = Namespace("contacts", description="Contact Management")
 contact_svc = ContactService(db.session)
-
 contact_response_schema = ContactSchema.get_schema(contact_ns)
-
 contact_post_schema = ContactSchema.post_schema(contact_ns)
-
 contact_filter_schema = ContactSchema.filter_schema(contact_ns)
-
 contact_filter_response = ContactSchema.filter_response_schema(contact_ns)
 
 @contact_ns.route("/")
