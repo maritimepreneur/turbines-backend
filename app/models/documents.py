@@ -1,5 +1,5 @@
 from app.database import db
-from sqlalchemy import Column, Integer, String, ForeignKey, Enum as SQLEnum
+from sqlalchemy import Column, Integer, String, ForeignKey, Enum as SQLEnum, UniqueConstraint
 from enum import Enum
 from sqlalchemy.orm import relationship
 
@@ -25,6 +25,10 @@ class Document(db.Model):
         SQLEnum(DocumentType, name="documen_type_enum"),
         default=DocumentType.OTHER,
         nullable=False
+    )
+
+    __table_args__ = (
+        UniqueConstraint("number", name="uq_document_code"),
     )
 
     project_id = Column(

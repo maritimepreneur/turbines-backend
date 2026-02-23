@@ -1,6 +1,6 @@
 from app.database import db
 from enum import Enum
-from sqlalchemy import Column, Integer, String, Text, Date, ForeignKey, Enum as SQLEnum
+from sqlalchemy import Column, Integer, String, Text, Date, ForeignKey, Enum as SQLEnum, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 class ProjectType(Enum):
@@ -36,6 +36,7 @@ class Project(db.Model):
     duration = Column(String, nullable=False)
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=True)
+    code = Column(String, nullable=False)
     payment_type = Column(
         SQLEnum(PaymentType, name="payment_type_enum"),
         default=PaymentType.CASH,
@@ -47,6 +48,11 @@ class Project(db.Model):
         default=Stages.CONCEPT,
         nullable=False
     )
+
+    __table_args__ = (
+        UniqueConstraint("code", name="uq_project_code"),
+    )
+
     contact_id = Column(
         Integer,
         ForeignKey("contacts.id"),
@@ -83,6 +89,7 @@ class Project(db.Model):
             "duration": self.duration,
             "start_date": self.start_date.isoformat() if self.start_date else None,
             "end_date": self.end_date.isoformat() if self.end_date else None,
+            "code": self.code,
             "payment_type": self.payment_type.value if self.payment_type else None,
             "description": self.description,
             "current_stages": self.current_stages.value if self.current_stages else None,

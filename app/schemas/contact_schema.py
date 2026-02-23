@@ -14,7 +14,12 @@ class ContactSchema(BaseSchema):
                 "phone_numbers": fields.List(fields.String),
                 "company": fields.String,
                 "partner_id": fields.Integer(required=False, allow_null=True),
-                "created_at": fields.String(description="ISO 8601 Date")
+                "meta": fields.Nested(namespace.model("Meta", {
+                    "created_at": fields.String(description="ISO 8601 Date"),
+                    "updated_at": fields.String(description="ISO 8601 Date"),
+                    "created_by": fields.Integer,
+                    "updated_by": fields.Integer,
+                })),
             }))
         })
     

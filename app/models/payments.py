@@ -1,5 +1,5 @@
 from app.database import db
-from sqlalchemy import Column, Integer, DATE, Numeric, String, Text, ForeignKey
+from sqlalchemy import Column, Integer, DATE, Numeric, String, Text, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 class Payment(db.Model):
@@ -7,9 +7,14 @@ class Payment(db.Model):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     date = Column(DATE, nullable=False)
+    code = Column(String, nullable=False)
     nominal = Column(Numeric(14, 2), nullable=False)
     notes = Column(Text, nullable=False)
     attachments = Column(String, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("code", name="uq_payment_code"),
+    )
 
     invoice_id = Column(
         Integer,
@@ -23,6 +28,7 @@ class Payment(db.Model):
         return {
             "id": self.id,
             "date": self.date.isoformat() if self.date else None,
+            "code": self.code,
             "nominal": float(self.nominal),
             "notes": self.notes,
             "attachments": self.attachments

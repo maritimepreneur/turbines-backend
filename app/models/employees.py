@@ -75,6 +75,7 @@ class Employee(db.Model):
 
     __table_args__ = (
         UniqueConstraint("nickname", name="uq_employee_nickname"),
+        UniqueConstraint("employee_code", name="uq_emplyee_code"),
     )
 
     user = relationship("User", back_populates="employee")

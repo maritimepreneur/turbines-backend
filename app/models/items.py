@@ -1,7 +1,12 @@
 from app.database import db
-from sqlalchemy import Column, Integer, String, Numeric, ForeignKey
+from enum import Enum
+from sqlalchemy import Column, Integer, String, Numeric, ForeignKey, Enum as SQLEnum, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSONB
+
+class ItemType(Enum):
+    SERVICE = "Service"
+    GOODS = "Goods"
 
 class Item(db.Model):
     __tablename__ = "items"
@@ -11,9 +16,17 @@ class Item(db.Model):
     cost = Column(Numeric(14, 2), nullable=False)
     amount = Column(Numeric(14, 2), nullable=False)
     billed_amount = Column(Numeric(14, 2), nullable=False)
-    type = Column(String, nullable=False)
+    type = Column(
+        SQLEnum(ItemType, name="item_type_enum"),
+        nullable=False
+    )
     amount_type = Column(String, nullable=False)
+    code = Column(String, nullable=False)
     attachments = Column(JSONB, nullable=False, default=list, server_default="[]")
+
+    __table_args__ = (
+        UniqueConstraint("code", name="uq_item_code"),
+    )
 
     expense_id = Column(
         Integer,
@@ -36,7 +49,7 @@ class Item(db.Model):
             "cost": float(self.cost),
             "amount": float(self.amount),
             "billed_amount": float(self.billed_amount),
-            "type": self.type,
+            "type": self.type.value if self.value else None,
             "amount_type": self.amount_type,
             "attachments": self.attachments
         }
