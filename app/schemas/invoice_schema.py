@@ -35,6 +35,12 @@ class InvoiceSchema(BaseSchema):
                     "id": fields.Integer,
                     "po_number": fields.String(attribute="number"), # Asumsi di PO ada field number
                 }), allow_null=True),
+                "meta": fields.Nested(namespace.model("Meta", {
+                    "created_at": fields.String(description="ISO 8601 Date"),
+                    "updated_at": fields.String(description="ISO 8601 Date"),
+                    "created_by": fields.Integer,
+                    "updated_by": fields.Integer,
+                })),
             }))
         })
 
@@ -88,7 +94,13 @@ class InvoiceSchema(BaseSchema):
             "grand_total": fields.String,
             "partner_name": fields.String,
             "contact_name": fields.String,
-            "po_number": fields.String
+            "po_number": fields.String,
+            "meta": fields.Nested(namespace.model("Meta", {
+                    "created_at": fields.String(description="ISO 8601 Date"),
+                    "updated_at": fields.String(description="ISO 8601 Date"),
+                    "created_by": fields.Integer,
+                    "updated_by": fields.Integer,
+                })),
         }, ordered=True)
 
         pagination_model = namespace.model("InvoicePaginationInfo", {

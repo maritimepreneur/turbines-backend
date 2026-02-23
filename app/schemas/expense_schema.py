@@ -10,12 +10,20 @@ class ExpenseSchema(BaseSchema):
                 "id": fields.Integer,
                 "period_date": fields.Date,
                 "code": fields.String,
-                "status": fields.String,
+                "status": fields.String(
+                    attribute=lambda x: x.status.value if x and x.status else None
+                ),
                 "total_amount": fields.String(
                 description="Decimal/Numeric amount as string, example 15000.00",
                 required=True
                 ),
                 "notes": fields.String,
+                "meta": fields.Nested(namespace.model("Meta", {
+                    "created_at": fields.String(description="ISO 8601 Date"),
+                    "updated_at": fields.String(description="ISO 8601 Date"),
+                    "created_by": fields.Integer,
+                    "updated_by": fields.Integer,
+                })),
             }))
         })
     
@@ -57,7 +65,13 @@ class ExpenseSchema(BaseSchema):
             "code": fields.String,
             "status": fields.String,
             "total_amount": fields.String,
-            "notes": fields.String
+            "notes": fields.String,
+            "meta": fields.Nested(namespace.model("Meta", {
+                    "created_at": fields.String(description="ISO 8601 Date"),
+                    "updated_at": fields.String(description="ISO 8601 Date"),
+                    "created_by": fields.Integer,
+                    "updated_by": fields.Integer,
+                })),
         }, ordered=True)
 
         pagination_model = namespace.model("ExpensePaginationInfo", {

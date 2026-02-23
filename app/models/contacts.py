@@ -3,8 +3,9 @@ from sqlalchemy import Column, Integer, String, ForeignKey, UniqueConstraint, Da
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSONB
+from app.models.meta.meta import Meta
 
-class Contact(db.Model):
+class Contact(db.Model, Meta):
     __tablename__ = "contacts"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -13,8 +14,6 @@ class Contact(db.Model):
     emails = Column(JSONB, nullable=False, default=list, server_default="[]")
     phone_numbers = Column(JSONB, nullable=False, default=list, server_default="[]")
     company = Column(String, nullable=False)
-    
-    created_at = Column(DateTime(timezone=True), server_default=func.now()) 
 
     partner_id = Column(
         Integer,
@@ -45,5 +44,10 @@ class Contact(db.Model):
             "phone_numbers": self.phone_numbers,
             "company": self.company,
             "partner_id": self.partner_id,
-            "created_at": self.created_at.isoformat() if self.created_at else None
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "created_by": self.created_by,
+            "updated_by": self.updated_by
         }
+        
+    """" Disini buat dict kalau perlu """

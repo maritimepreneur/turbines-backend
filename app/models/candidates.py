@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy import Column, Integer, String, Boolean, UniqueConstraint
 from sqlalchemy.orm import relationship
 from app.database import db
 from sqlalchemy.dialects.postgresql import JSONB
@@ -15,6 +15,10 @@ class Candidate(db.Model):
     cv_source = Column(JSONB, nullable=False, server_default="{}")
     referrer_name = Column(String, nullable=False)
     description = Column(String, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("code", name="uq_candidate_code"),
+    )
 
     cv_trackers = relationship("CV_Tracker", back_populates="candidate")
 

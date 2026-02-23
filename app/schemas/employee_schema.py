@@ -31,6 +31,12 @@ class EmployeeSchema(BaseSchema):
                 "signature_img_url": fields.String,
                 "signature_scale": fields.Float,
                 "user_id": fields.Integer,
+                "meta": fields.Nested(namespace.model("Meta", {
+                    "created_at": fields.String(description="ISO 8601 Date"),
+                    "updated_at": fields.String(description="ISO 8601 Date"),
+                    "created_by": fields.Integer,
+                    "updated_by": fields.Integer,
+                })),
             }))
         })
 
@@ -117,6 +123,12 @@ class EmployeeSchema(BaseSchema):
             "phone": fields.String,
             "img_url": fields.String,
             "religion": fields.String,
+            "meta": fields.Nested(namespace.model("Meta", {
+                    "created_at": fields.String(description="ISO 8601 Date"),
+                    "updated_at": fields.String(description="ISO 8601 Date"),
+                    "created_by": fields.Integer,
+                    "updated_by": fields.Integer,
+                })),
         })
 
         return namespace.model("EmployeeListResponse", {
