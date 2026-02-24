@@ -12,8 +12,9 @@ class LeadService(BaseService):
         super().__init__(db, Lead)
     
     def get_all_leads(self):
-        return self.get_all()
-    
+        data = [x.to_dict() for x in self.db.query(Lead).all()]
+        return response(200, "Success", data)
+
     def get_lead_by_id(self, lead_id: int):
         return self.get_by_id(lead_id)
     
@@ -158,7 +159,6 @@ class LeadService(BaseService):
         try:
             from app.models.leads import Stages
             
-            # Validate stage
             if new_stage.upper() not in [s.name for s in Stages]:
                 return response(400, f"Invalid stage. Valid stages: {[s.name for s in Stages]}")
             

@@ -1,8 +1,9 @@
 from app.database import db
 from sqlalchemy import Column, Integer, String, Numeric, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
+from app.models.meta.meta import Meta
 
-class Quotation(db.Model):
+class Quotation(db.Model, Meta):
     __tablename__ = "quotations"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -45,5 +46,11 @@ class Quotation(db.Model):
             "offering_letter": self.offering_letter,
             "contact_id": self.contact_id,
             "partner_id": self.partner_id,
-            "lead_id": self.lead_id
+            "lead_id": self.lead_id,
+            "meta": {
+                "created_at": self.created_at.isoformat() if self.created_at else None,
+                "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+                "created_by": self.created_by,
+                "updated_by": self.updated_by
+            }
         }

@@ -7,9 +7,10 @@ from app.utils import role_required
 
 expense_ns = Namespace("expenses", description="Expense Management")
 expense_svc = ExpenseService(db.session)
-
 expense_response_schema = ExpenseSchema.get_schema(expense_ns)
 expense_post_schema = ExpenseSchema.post_schema(expense_ns)
+expense_filter_schema = ExpenseSchema.filter_schema(expense_ns)
+expense_filter_response = ExpenseSchema.filter_response_schema(expense_ns)
 
 @expense_ns.route("/")
 class ExpenseList(Resource):
@@ -18,8 +19,17 @@ class ExpenseList(Resource):
     @expense_ns.doc(security="Bearer Auth")
     @expense_ns.marshal_list_with(expense_response_schema)
     def get(self):
-        """ Get all expenses """
+        """ Get all expenses (Simple List) """
         return expense_svc.get_all_expenses()
+    
+    @jwt_required()
+    @role_required("ADMIN", "BIZDEV", "FINANCE", "OPERATION")
+    @expense_ns.doc(security="Bearer Auth")
+    @expense_ns.expect(expense_filter_schema)
+    @expense_ns.response(200, "Success", expense_filter_response)
+    def post(self):
+        """ Search and Filter Expenses with Pagination """
+        return expense_svc.get_expense_list_filter(expense_ns.payload)
     
 @expense_ns.route("/create")
 class ExpenseCreate(Resource):
@@ -49,11 +59,11 @@ class ExpenseDetail(Resource):
     @expense_ns.marshal_with(expense_response_schema)
     def put(self, id):
         """ Update expense detail """
-        return expense_svc.update(id, expense_ns.payload)
+        return expense_svc.update_expense_by_id(id, expense_ns.payload)
 
     @jwt_required()
     @role_required("ADMIN")
     @expense_ns.doc(security="Bearer Auth")
     def delete(self, id):
-        """ Delete a expense """
+        """ Delete an expense """
         return expense_svc.delete(id)

@@ -2,8 +2,9 @@ from app.database import db
 from sqlalchemy import Column, String, Integer, Numeric, Text, Date, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+from app.models.meta.meta import Meta
 
-class Invoice(db.Model):
+class Invoice(db.Model, Meta):
     __tablename__ = "invoices"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -65,9 +66,15 @@ class Invoice(db.Model):
             "overheads": float(self.overheads),
             "discount": float(self.discount),
             "grand_total": float(self.grand_total),
-            "payment_details": float(self.payment_details),
+            "payment_details": str(self.payment_details) if self.payment_details else "",
             "agreement_letter": self.agreement_letter,
             "contact_id": self.contact_id,
             "partner_id": self.partner_id,
-            "purchase_order_id": self.purchase_order_id
+            "purchase_order_id": self.purchase_order_id,
+            "meta": {
+                "created_at": self.created_at.isoformat() if self.created_at else None,
+                "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+                "created_by": self.created_by,
+                "updated_by": self.updated_by
+            }
         }
