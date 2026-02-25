@@ -12,30 +12,70 @@ class PurchaseOrderService(BaseService):
         super().__init__(db, Purchase_Order)
 
     def create_purchase(self, data):
-        data['number'] = self.generate_purchase_number()
+        purchase_type = data.pop("type", None) 
+        partner_id = data.get("partner_id")
+
+        if not purchase_type:
+            raise ValueError("type is required")
+
+        if not partner_id:
+            raise ValueError("partner_id is required")
+
+        partner = self.db.query(Partner).get(partner_id)
+        if not partner:
+            raise ValueError("Partner not found")
+
+        initials = partner.initials
+        if not initials:
+            raise ValueError("Partner does not have initials")
+
+        data["number"] = self.generate_purchase_number(initials, purchase_type)
+
         return self.create(data)
 
-    def generate_purchase_number(self):
-        last_purchase = self.db.query(Purchase_Order).order_by(desc(Purchase_Order.id)).first()
+    def generate_purchase_number(self, initials, purchase_type):
+        type_mapping = {
+            "service": "SVC",
+            "goods": "GDS"
+        }
+
+        type_code = type_mapping.get(purchase_type.lower())
+        if not type_code:
+            raise ValueError("type must be 'service' or 'goods'")
+
+        prefix = f"PO-{initials}-{type_code}-"
+
+        last_purchase = (
+            self.db.query(Purchase_Order)
+            .filter(Purchase_Order.number.ilike(f"{prefix}%"))
+            .order_by(desc(Purchase_Order.number))
+            .first()
+        )
+
         if not last_purchase:
-            new_number = 1
+            new_increment = 1
         else:
-            new_number = last_purchase.id + 1
-        return f"PO-{new_number:04d}"
+            try:
+                last_number = last_purchase.number.split("-")[-1]
+                new_increment = int(last_number) + 1
+            except (ValueError, IndexError):
+                new_increment = 1
+
+        return f"{prefix}{new_increment:06d}"
 
     def update_purchase(self, id, data):
-        data.pop('number', None)
+        data.pop("number", None)
+        data.pop("type", None)  
         return self.update(id, data)
 
     def get_purchase_order_list_filter(self, payload):
-        """Search, Filter, and Pagination for Purchase Orders"""
         try:
             page_size = payload.get('page_size', 25)
             page_number = payload.get('page_number', 1)
             sort_by = payload.get('sort_by', 'id')
             sort_order = payload.get('sort_order', 'DESC')
             search_query = payload.get('search', '')
-            
+
             partner_ids = payload.get('partner_ids', [])
             quotation_ids = payload.get('quotation_ids', [])
 
@@ -54,24 +94,30 @@ class PurchaseOrderService(BaseService):
 
             if partner_ids:
                 query = query.filter(Purchase_Order.partner_id.in_(partner_ids))
+
             if quotation_ids:
                 query = query.filter(Purchase_Order.quotation_id.in_(quotation_ids))
 
-            sort_column = getattr(Purchase_Order, sort_by) if hasattr(Purchase_Order, sort_by) else Purchase_Order.id
-            query = query.order_by(desc(sort_column) if sort_order.upper() == 'DESC' else asc(sort_column))
+            sort_column = getattr(Purchase_Order, sort_by) \
+                if hasattr(Purchase_Order, sort_by) else Purchase_Order.id
+
+            query = query.order_by(
+                desc(sort_column) if sort_order.upper() == 'DESC'
+                else asc(sort_column)
+            )
 
             total_items = query.count()
             total_pages = (total_items + page_size - 1) // page_size
             offset = (page_number - 1) * page_size
-            
+
             raw_data = query.offset(offset).limit(page_size).all()
-            
+
             data_list = []
             for po in raw_data:
                 item = po.to_dict()
                 item["partner_name"] = po.partner.name if po.partner else None
                 item["contact_name"] = po.contact.name if po.contact else None
-                item["quotation_summary"] = po.quotation.summary if po.quotation else None 
+                item["quotation_summary"] = po.quotation.summary if po.quotation else None
                 data_list.append(item)
 
             result = {
@@ -83,6 +129,7 @@ class PurchaseOrderService(BaseService):
                     "total_items": total_items
                 }
             }
+
             return response(200, "Success", result)
 
         except Exception as e:
