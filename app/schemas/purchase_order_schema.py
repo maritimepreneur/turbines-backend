@@ -43,11 +43,7 @@ class PurchaseOrderSchema(BaseSchema):
             "partner_id": fields.Integer(required=True, description="ID dari tabel Partners"),
             "contact_id": fields.Integer(required=True, description="ID dari tabel Contacts"),
             "quotation_id": fields.Integer(required=True, description="ID dari tabel Quotations"),
-            "type": fields.String(
-            required=True,
-            description="Jenis PO: service atau goods",
-            enum=["service", "goods"]
-            ),
+            "type": fields.String(required=True, description="Jenis PO: service atau goods",enum=["service", "goods"]),
             "number": fields.String(readonly=True, description="Auto-generated (Tidak perlu diisi saat Create)")
         }, ordered=True)
 
