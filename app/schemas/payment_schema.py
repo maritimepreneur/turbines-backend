@@ -10,6 +10,7 @@ class PaymentSchema(BaseSchema):
             "data": fields.Nested(namespace.model("Payment", {
                 "id": fields.Integer,
                 "date": fields.String,
+                "code": fields.String,
                 "nominal": fields.Float,
                 "notes": fields.String,
                 "attachments": fields.String,
