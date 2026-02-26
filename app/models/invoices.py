@@ -9,7 +9,7 @@ class Invoice(db.Model, Meta):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
 
-    number = Column(Integer, nullable=False)
+    number = Column(String, nullable=False)
     created = Column(DateTime, server_default=func.now(), nullable=False)
     period = Column(Date, nullable=False)
     due_date = Column(Date, nullable=False)
