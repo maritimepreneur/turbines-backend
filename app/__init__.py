@@ -20,12 +20,11 @@ def create_app():
         methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
     )
 
-    # Initialize extensions
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
+    
 
-    # JWT error handlers
     @jwt.expired_token_loader
     def expired_token_callback(jwt_header, jwt_payload):
         return {
@@ -75,16 +74,22 @@ def create_app():
     )
 
     # Import namespaces
-    from .routes import auth_ns, contact_ns, partner_ns, lead_ns, employee_ns
-    from .routes import auth_ns, contact_ns, partner_ns, lead_ns, attendance_ns
+    from .routes import auth_ns, contact_ns, partner_ns, lead_ns, employee_ns, attendance_ns, vendor_ns, purchase_order_ns, quotation_ns, document_ns, items_ns,  expense_ns, schedule_ns, invoice_ns, payment_ns
     
-    # Register namespaces dengan prefix /api
     api.add_namespace(auth_ns, path="/api/auth")
     api.add_namespace(contact_ns, path="/api/contacts")
     api.add_namespace(partner_ns, path="/api/partners")
     api.add_namespace(lead_ns, path="/api/leads")
+    api.add_namespace(vendor_ns, path="/api/vendors")
     api.add_namespace(employee_ns, path="/api/employees")
     api.add_namespace(attendance_ns, path="/api/attendances")
-
+    api.add_namespace(quotation_ns, path="/api/quotations")
+    api.add_namespace(purchase_order_ns, path="/api/purchase-orders")
+    api.add_namespace(document_ns, path="/api/documents")
+    api.add_namespace(items_ns, path="/api/items")
+    api.add_namespace(expense_ns, path="/api/expenses")
+    api.add_namespace(invoice_ns, path="/api/invoices")
+    api.add_namespace(schedule_ns, path="/api/schedules")
+    api.add_namespace(payment_ns, path="/api/payments")
 
     return app

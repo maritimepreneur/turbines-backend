@@ -7,7 +7,6 @@ from app.utils import role_required
 
 employee_ns = Namespace("employees", description="Employee Management")
 employee_svc = EmployeeService(db.session)
-
 employee_response_schema = EmployeeSchema.get_schema(employee_ns)
 employee_post_schema = EmployeeSchema.post_schema(employee_ns)
 employee_filter_schema = EmployeeSchema.filter_schema(employee_ns)

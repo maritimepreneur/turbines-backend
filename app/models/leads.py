@@ -3,6 +3,7 @@ from enum import Enum
 from sqlalchemy import Column, Integer, String, Text, DATE, ForeignKey, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSONB
+from app.models.meta.meta import Meta
 
 class Stages(Enum):
     NEW = "New Lead"
@@ -13,7 +14,7 @@ class Stages(Enum):
     MOU = "MoU"
     EXECUTION = "Execution"
 
-class Lead(db.Model):
+class Lead(db.Model, Meta):
     __tablename__ = "leads"
     
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -39,7 +40,6 @@ class Lead(db.Model):
         nullable=True
     )
 
-    # Relationships
     contact = relationship("Contact", back_populates="leads")
     partner = relationship("Partner", back_populates="leads")
     projects = relationship("Project", back_populates="lead")
@@ -55,8 +55,13 @@ class Lead(db.Model):
             "contact_id": self.contact_id,
             "partner_id": self.partner_id,
             "current_stages": self.current_stages.name if self.current_stages else None,  
-            # Flatten nested data for display if needed
             "contact_name": self.contact.name if self.contact else None,
-            "company": self.contact.company if self.contact else None, # Company comes from Contact
-            "partner_name": self.partner.name if self.partner else None
+            "company": self.contact.company if self.contact else None,
+            "partner_name": self.partner.name if self.partner else None,
+            "meta": {
+                "created_at": self.created_at.isoformat() if self.created_at else None,
+                "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+                "created_by": self.created_by,
+                "updated_by": self.updated_by
+            }
         }

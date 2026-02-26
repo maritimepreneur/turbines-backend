@@ -15,6 +15,12 @@ class AttendanceSchema(BaseSchema):
                 "checked": fields.Boolean,
                 "employee_id": fields.Integer,
                 "employee_name": fields.String(description="Name of the employee"),
+                "meta": fields.Nested(namespace.model("Meta", {
+                    "created_at": fields.String(description="ISO 8601 Date"),
+                    "updated_at": fields.String(description="ISO 8601 Date"),
+                    "created_by": fields.Integer,
+                    "updated_by": fields.Integer,
+                })),
             }))
         })
     
@@ -110,4 +116,22 @@ class AttendanceSchema(BaseSchema):
             "code": fields.Integer(default=200),
             "status": fields.String(default="success"),
             "data": fields.List(fields.Nested(absent_item))
+        })
+
+    @classmethod
+    def history_response_schema(cls, namespace: Model):
+        """Schema for Employee Attendance History Response"""
+        attendance_item = namespace.model("AttendanceHistoryItem", {
+            "id": fields.Integer,
+            "date": fields.String,
+            "clock_in": fields.Raw,
+            "clock_out": fields.Raw,
+            "checked": fields.Boolean,
+        })
+
+        return namespace.model("AttendanceHistoryResponse", {
+            "message": fields.String(default="Success"),
+            "code": fields.Integer(default=200),
+            "status": fields.String(default="success"),
+            "data": fields.List(fields.Nested(attendance_item))
         })

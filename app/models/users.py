@@ -1,5 +1,5 @@
 from enum import Enum
-from sqlalchemy import Column, Integer, String, DateTime, UniqueConstraint, Enum as SQLEnum, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, UniqueConstraint, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import db
@@ -12,6 +12,7 @@ class UserRole(Enum):
     BIZDEV = "BIZDEV"
     FINANCE = "FINANCE"
     OPERATION = "OPERATION"
+    HR = "HR"
 
 class User(db.Model):
     __tablename__ = "users"
