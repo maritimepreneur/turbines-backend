@@ -6,7 +6,6 @@ class ScheduleSchema(BaseSchema):
     def get_schema(cls, namespace: Model):
         """Schema for Schedule Details"""
         
-        # Employee detail model
         employee_detail = namespace.model("ScheduleEmployeeDetail", {
             "id": fields.Integer,
             "full_name": fields.String,
@@ -14,7 +13,6 @@ class ScheduleSchema(BaseSchema):
             "email": fields.String
         })
         
-        # Tagged employee model
         tagged_employee = namespace.model("ScheduleTaggedEmployee", {
             "id": fields.Integer,
             "full_name": fields.String,
@@ -32,7 +30,13 @@ class ScheduleSchema(BaseSchema):
                 "date": fields.String,
                 "employee_id": fields.Integer,
                 "employee": fields.Nested(employee_detail, allow_null=True),
-                "tagged_employees": fields.List(fields.Nested(tagged_employee))
+                "tagged_employees": fields.List(fields.Nested(tagged_employee)),
+                "meta": fields.Nested(namespace.model("Meta", {
+                    "created_at": fields.String(description="ISO 8601 Date"),
+                    "updated_at": fields.String(description="ISO 8601 Date"),
+                    "created_by": fields.Integer,
+                    "updated_by": fields.Integer,
+                })),
             }))
         })
     
@@ -56,12 +60,9 @@ class ScheduleSchema(BaseSchema):
             "page_number": fields.Integer(required=True, default=1),
             "sort_by": fields.String(required=True, default="date"),
             "sort_order": fields.String(required=True, default="DESC"),
-            
             "search": fields.String(description="Search by Title, Description, or Employee Name"),
-            
             "date_start": fields.String(description="Start Date (YYYY-MM-DD)"),
             "date_end": fields.String(description="End Date (YYYY-MM-DD)"),
-            
             "employees": fields.List(fields.String, description="Filter by Employee Names"),
         })
 
@@ -69,7 +70,6 @@ class ScheduleSchema(BaseSchema):
     def filter_response_schema(cls, namespace: Model):
         """Schema for Output Response Filter (List + Pagination)"""
         
-        # Employee detail for filter
         employee_detail = namespace.model("ScheduleFilterEmployeeDetail", {
             "id": fields.Integer,
             "full_name": fields.String,
@@ -77,7 +77,6 @@ class ScheduleSchema(BaseSchema):
             "email": fields.String
         })
         
-        # Tagged employee for filter
         tagged_employee = namespace.model("ScheduleFilterTaggedEmployee", {
             "id": fields.Integer,
             "full_name": fields.String,
@@ -93,7 +92,13 @@ class ScheduleSchema(BaseSchema):
             "date": fields.String,
             "employee_id": fields.Integer,
             "employee": fields.Nested(employee_detail, allow_null=True),
-            "tagged_employees": fields.List(fields.Nested(tagged_employee))
+            "tagged_employees": fields.List(fields.Nested(tagged_employee)),
+            "meta": fields.Nested(namespace.model("Meta", {
+                    "created_at": fields.String(description="ISO 8601 Date"),
+                    "updated_at": fields.String(description="ISO 8601 Date"),
+                    "created_by": fields.Integer,
+                    "updated_by": fields.Integer,
+                })),
         })
 
         pagination_model = namespace.model("SchedulePaginationInfo", {

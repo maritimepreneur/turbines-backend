@@ -14,6 +14,12 @@ class DocumentSchema(BaseSchema):
                 "document_type": fields.String,
                 "project_id": fields.Integer,
                 "quotation_id": fields.Integer,
+                "meta": fields.Nested(namespace.model("Meta", {
+                    "created_at": fields.String(description="ISO 8601 Date"),
+                    "updated_at": fields.String(description="ISO 8601 Date"),
+                    "created_by": fields.Integer,
+                    "updated_by": fields.Integer,
+                })),
             }))
         })
 
@@ -33,43 +39,46 @@ class DocumentSchema(BaseSchema):
 
     @classmethod
     def filter_schema(cls, namespace: Model):
-        """Schema untuk Request Filter"""
+        """Schema untuk Request Body Search & Filter Document"""
         return namespace.model("DocumentFilterRequest", {
-            "search": fields.String(description="Cari berdasarkan nama"),
-            "document_types": fields.List(fields.String, description="Filter tipe (List of String)"),
-            "project_id": fields.Integer(),
-            "page_number": fields.Integer(default=1),
-            "page_size": fields.Integer(default=25),
-            "sort_by": fields.String(default="id"),
-            "sort_order": fields.String(default="DESC")
-        })
+            "page_size": fields.Integer(required=True, default=25),
+            "page_number": fields.Integer(required=True, default=1),
+            "sort_by": fields.String(required=True, default="id"),
+            "sort_order": fields.String(required=True, default="DESC"),
+            "search": fields.String(description="Search by Document Name"),
+            "document_types": fields.List(fields.String, description="Filter by Document Types (e.g. MOU, PO)"),
+            "project_ids": fields.List(fields.Integer, description="Filter by multiple Project IDs"),
+            "quotation_ids": fields.List(fields.Integer, description="Filter by multiple Quotation IDs")
+        }, ordered=True)
 
     @classmethod
     def filter_response_schema(cls, namespace: Model):
-        """Schema untuk Response dengan Pagination"""
-        pagination_model = namespace.model("DocPagination", {
+        """Schema untuk Response List Document dengan Pagination"""
+        doc_item_model = namespace.model("DocumentFilterItem", {
+            "id": fields.Integer,
+            "number": fields.Integer,
+            "name": fields.String,
+            "document_type": fields.String,
+            "project_name": fields.String,
+            "quotation_summary": fields.String
+        }, ordered=True)
+
+        pagination_model = namespace.model("DocPaginationInfo", {
             "current_page": fields.Integer,
             "page_size": fields.Integer,
             "total_pages": fields.Integer,
             "total_items": fields.Integer
-        })
-        
-        doc_item = namespace.model("DocItem", {
-            "id": fields.Integer,
-            "number": fields.Integer,
-            "name": fields.String,
-            "document_type": fields.String
-        })
+        }, ordered=True)
 
         return namespace.model("DocumentFilterResponse", {
             "message": fields.String(default="Success"),
             "code": fields.Integer(default=200),
             "status": fields.String(default="success"),
             "data": fields.Nested(namespace.model("DocFilterData", {
-                "list": fields.List(fields.Nested(doc_item)),
+                "list": fields.List(fields.Nested(doc_item_model)),
                 "pagination": fields.Nested(pagination_model)
             }))
-        })
+        }, ordered=True)
 
     @classmethod
     def list_response_schema(cls, namespace: Model):
@@ -81,6 +90,12 @@ class DocumentSchema(BaseSchema):
             "document_type": fields.String,
             "project_id": fields.Integer,
             "quotation_id": fields.Integer,
+            "meta": fields.Nested(namespace.model("Meta", {
+                    "created_at": fields.String(description="ISO 8601 Date"),
+                    "updated_at": fields.String(description="ISO 8601 Date"),
+                    "created_by": fields.Integer,
+                    "updated_by": fields.Integer,
+                })),
         })
 
         return namespace.model("DocumentListResponse", {

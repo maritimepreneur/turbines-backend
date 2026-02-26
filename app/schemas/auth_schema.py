@@ -5,7 +5,6 @@ class AuthSchema(BaseSchema):
     
     @classmethod
     def register_schema(cls, namespace: Model):
-  
         return namespace.model("RegisterRequest", {
             "username": fields.String(required=True, description="Username"),
             "email": fields.String(required=True, description="Email address"),

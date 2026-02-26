@@ -10,7 +10,7 @@ class PartnerSchema(BaseSchema):
                 "id": fields.Integer,
                 "name": fields.String,
                 "initials": fields.String,
-                "industry": fields.String(attribute="industry"), # Mapping ke field model 'industry'
+                "industry": fields.String(attribute="industry"),
                 "company_type": fields.String(
                     attribute=lambda x: x.company_type.value if x and x.company_type else None
                 ),
@@ -19,6 +19,12 @@ class PartnerSchema(BaseSchema):
                 ),
                 "service": fields.String,
                 "goods": fields.String,
+                "meta": fields.Nested(namespace.model("Meta", {
+                    "created_at": fields.String(description="ISO 8601 Date"),
+                    "updated_at": fields.String(description="ISO 8601 Date"),
+                    "created_by": fields.Integer,
+                    "updated_by": fields.Integer,
+                })),
             }))
         })
     
@@ -38,14 +44,11 @@ class PartnerSchema(BaseSchema):
     def filter_schema(cls, namespace: Model):
         """ Schema untuk Payload Request Search & Filter Partner """
         return namespace.model("PartnerFilterRequest", {
-
             "page_size": fields.Integer(required=True, default=25),
             "page_number": fields.Integer(required=True, default=1),
             "sort_by": fields.String(required=True, default="id"),
             "sort_order": fields.String(required=True, default="DESC"),
-            
             "search": fields.String(description="Search by Name or Initials"),
-            
             "industries": fields.List(fields.String, description="Filter by Industry (Partial Match)"),
             "company_types": fields.List(fields.String, description="Filter by Company Type (Exact Match e.g., 'Private')"),
             "partner_types": fields.List(fields.String, description="Filter by Partner Type (Exact Match e.g., 'Vendor')"),

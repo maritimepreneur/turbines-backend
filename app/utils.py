@@ -1,7 +1,5 @@
 from functools import wraps
 from flask_jwt_extended import verify_jwt_in_request, get_jwt
-
-
 from flask import jsonify
 
 def response(code: int = None, message: str = None, data: dict = None):
