@@ -14,3 +14,4 @@ from .payment_routes import payment_ns
 from .item_routes import items_ns
 from .invoice_routes import invoice_ns
 from .schedule_routes import schedule_ns
+from .approval_routes import approval_ns
