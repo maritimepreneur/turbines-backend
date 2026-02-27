@@ -1,10 +1,13 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, desc, asc, not_ 
+from sqlalchemy import or_, desc, asc, not_
 from datetime import date, datetime
+from zoneinfo import ZoneInfo
+
 from app.services.base_service import BaseService
 from app.models.attendances import Attendance
 from app.models.employees import Employee
 from app.utils import response
+
 
 class AttendanceService(BaseService):
     def __init__(self, db: Session):
@@ -26,7 +29,11 @@ class AttendanceService(BaseService):
             if not employee:
                 return response(404, "Employee not found for this user")
 
-            today = date.today()
+            # waktu sekarang UTC -> WIB
+            timenow_utc = datetime.now(ZoneInfo("UTC"))
+            timenow_wib = timenow_utc.astimezone(ZoneInfo("Asia/Jakarta"))
+
+            today = timenow_wib.date()
 
             existing = self.db.query(Attendance).filter(
                 Attendance.employee_id == employee.id,
@@ -35,13 +42,18 @@ class AttendanceService(BaseService):
 
             if existing:
                 return response(400, "Already clocked in today")
-            
-            timenow = datetime.now().isoformat()
-            ontime = "09:00"
-            status = "On Time" if timenow <= f"{today}T{ontime}:00" else "Late"
-            
+
+            ontime = "09:15"
+
+            limit_time = datetime.strptime(
+                f"{today} {ontime}",
+                "%Y-%m-%d %H:%M"
+            ).replace(tzinfo=ZoneInfo("Asia/Jakarta"))
+
+            status = "On Time" if timenow_wib <= limit_time else "Late"
+
             clock_in_data = {
-                "timestamp": timenow,
+                "timestamp": timenow_wib.isoformat(),
                 "status": status,
                 "latitude": payload.get('latitude'),
                 "longitude": payload.get('longitude')
@@ -71,7 +83,10 @@ class AttendanceService(BaseService):
             if not employee:
                 return response(404, "Employee not found for this user")
 
-            today = date.today()
+            timenow_utc = datetime.now(ZoneInfo("UTC"))
+            timenow_wib = timenow_utc.astimezone(ZoneInfo("Asia/Jakarta"))
+
+            today = timenow_wib.date()
 
             attendance = self.db.query(Attendance).filter(
                 Attendance.employee_id == employee.id,
@@ -85,9 +100,9 @@ class AttendanceService(BaseService):
                 return response(400, "Already clocked out today")
 
             clock_out_data = {
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": timenow_wib.isoformat(),
                 "status": payload.get('status', 'On Time'),
-                "desc": payload.get('desc', ''), 
+                "desc": payload.get('desc', ''),
                 "latitude": payload.get('latitude'),
                 "longitude": payload.get('longitude')
             }
@@ -109,6 +124,7 @@ class AttendanceService(BaseService):
                 return response(404, "Employee not found for this user")
 
             today = date.today()
+
             attendance = self.db.query(Attendance).filter(
                 Attendance.employee_id == employee.id,
                 Attendance.date == today
@@ -154,7 +170,7 @@ class AttendanceService(BaseService):
             page_size = payload.get('page_size', 10)
             page_number = payload.get('page_number', 1)
             search_query = payload.get('search', '')
-            checked_filter = payload.get('checked') 
+            checked_filter = payload.get('checked')
             start_date = payload.get('start_date')
             end_date = payload.get('end_date')
             sort_order = payload.get('sort_order', 'DESC')
@@ -227,7 +243,7 @@ class AttendanceService(BaseService):
                     "id": emp.id,
                     "employee_name": emp.full_name,
                     "employee_code": emp.employee_code,
-                    "nickname": emp.nickname, 
+                    "nickname": emp.nickname,
                     "img_url": emp.img_url,
                     "phone": emp.phone
                 })

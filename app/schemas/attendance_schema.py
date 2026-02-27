@@ -15,6 +15,12 @@ class AttendanceSchema(BaseSchema):
                 "checked": fields.Boolean,
                 "employee_id": fields.Integer,
                 "employee_name": fields.String(description="Name of the employee"),
+                "meta": fields.Nested(namespace.model("Meta", {
+                    "created_at": fields.String(description="ISO 8601 Date"),
+                    "updated_at": fields.String(description="ISO 8601 Date"),
+                    "created_by": fields.Integer,
+                    "updated_by": fields.Integer,
+                })),
             }))
         })
     

@@ -17,7 +17,12 @@ class VendorSchema(BaseSchema):
                 "partner_type": fields.String,
                 "service": fields.List(fields.String),
                 "goods": fields.List(fields.String),
-                "created_at": fields.String
+                "meta": fields.Nested(namespace.model("Meta", {
+                    "created_at": fields.String(description="ISO 8601 Date"),
+                    "updated_at": fields.String(description="ISO 8601 Date"),
+                    "created_by": fields.Integer,
+                    "updated_by": fields.Integer,
+                })),
             }))
         }, ordered=True)
 

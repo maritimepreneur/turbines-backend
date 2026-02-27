@@ -26,6 +26,12 @@ class PurchaseOrderSchema(BaseSchema):
                     "id": fields.Integer,
                     "summary": fields.String,
                 }), allow_null=True),
+                "meta": fields.Nested(namespace.model("Meta", {
+                    "created_at": fields.String(description="ISO 8601 Date"),
+                    "updated_at": fields.String(description="ISO 8601 Date"),
+                    "created_by": fields.Integer,
+                    "updated_by": fields.Integer,
+                })),
             }, ordered=True))
         }, ordered=True)
 
@@ -37,6 +43,7 @@ class PurchaseOrderSchema(BaseSchema):
             "partner_id": fields.Integer(required=True, description="ID dari tabel Partners"),
             "contact_id": fields.Integer(required=True, description="ID dari tabel Contacts"),
             "quotation_id": fields.Integer(required=True, description="ID dari tabel Quotations"),
+            "type": fields.String(required=True, description="Jenis PO: service atau goods",enum=["service", "goods"]),
             "number": fields.String(readonly=True, description="Auto-generated (Tidak perlu diisi saat Create)")
         }, ordered=True)
 
@@ -63,7 +70,12 @@ class PurchaseOrderSchema(BaseSchema):
             "partner_name": fields.String,
             "contact_name": fields.String,
             "quotation_summary": fields.String,
-            "created_at": fields.String
+            "meta": fields.Nested(namespace.model("Meta", {
+                    "created_at": fields.String(description="ISO 8601 Date"),
+                    "updated_at": fields.String(description="ISO 8601 Date"),
+                    "created_by": fields.Integer,
+                    "updated_by": fields.Integer,
+                })),
         }, ordered=True)
 
         pagination_model = namespace.model("POPaginationInfo", {
