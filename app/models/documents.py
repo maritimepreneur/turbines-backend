@@ -46,6 +46,7 @@ class Document(db.Model, Meta):
 
     project = relationship("Project", back_populates="documents")
     quotation = relationship("Quotation", back_populates="documents")
+    agreement = relationship("Agreement", back_populates="documents")
 
 
     def to_dict(self):

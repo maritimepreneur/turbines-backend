@@ -46,6 +46,7 @@ class Partner(db.Model, Meta):
     purchase_orders = relationship("Purchase_Order", back_populates="partner")
     invoices = relationship("Invoice", back_populates="partner")
     requirements = relationship("Requirement", back_populates="partners")
+    agreement_partners = relationship("AgreementPartner", back_populates="partner")
 
     def to_dict(self):
         """ Helper untuk mengubah object SQLAlchemy menjadi Dictionary """
