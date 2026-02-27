@@ -32,6 +32,7 @@ class Contact(db.Model, Meta):
     purchase_orders = relationship("Purchase_Order", back_populates="contact")
     invoices = relationship("Invoice", back_populates="contact")
     projects = relationship("Project", back_populates="contact")
+    agreement = relationship("Agreement", back_populates="contacts")
 
     def to_dict(self):
         """
