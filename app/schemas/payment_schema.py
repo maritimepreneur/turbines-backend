@@ -45,9 +45,10 @@ class PaymentSchema(BaseSchema):
         payment_item_model = namespace.model("PaymentFilterItem", {
             "id": fields.Integer,
             "date": fields.String,
+            "code": fields.String,
             "nominal": fields.Float,
             "notes": fields.String,
-            "invoice_number": fields.String,
+            "attachments": fields.String,
         }, ordered=True)
 
         return namespace.model("PaymentFilterResponse", {
