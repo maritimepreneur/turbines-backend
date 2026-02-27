@@ -73,9 +73,7 @@ def create_app():
         security='Bearer Auth'
     )
 
-    # Import namespaces
     from .routes import auth_ns, contact_ns, partner_ns, lead_ns, employee_ns, attendance_ns, vendor_ns, purchase_order_ns, quotation_ns, document_ns, items_ns,  expense_ns, schedule_ns, invoice_ns
-    
     
     api.add_namespace(auth_ns, path="/api/auth")
     api.add_namespace(contact_ns, path="/api/contacts")
