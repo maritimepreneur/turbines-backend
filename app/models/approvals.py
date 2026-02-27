@@ -1,6 +1,6 @@
 from app.database import db
 from enum import Enum
-from sqlalchemy import Column, Integer, ForeignKey, Enum as SQLEnum, UniqueConstraint
+from sqlalchemy import Column, Integer, String, ForeignKey, Enum as SQLEnum, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 class ApprovalType(Enum):
@@ -16,7 +16,7 @@ class Approval(db.Model):
         SQLEnum(ApprovalType, name="approval_type_enum"),
         nullable=False
     )
-    code = Column(Integer, nullable=False)
+    code = Column(String, nullable=False)
 
     __table_args__ = (
         UniqueConstraint("code", name="uq_approval_code"),

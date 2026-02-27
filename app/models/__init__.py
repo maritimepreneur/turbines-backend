@@ -19,3 +19,5 @@ from .cv_trackers import CV_Tracker
 from .leave_policy import Leave_Policy
 from .leave_history import Leave_History
 from .attendances import Attendance
+from .agreements import Agreement
+from .agreement_partners import AgreementPartner

@@ -14,13 +14,14 @@ class DocumentType(Enum):
     REPORT = "Report"
     CERTIFICATE = "Certificate"
     AGREEMENT = "Agreement"
-    QUOTATION = "QUOTATION"
+    QUOTATION = "Quotation"
+    PROPOSAL = "Proposal"
 
 class Document(db.Model, Meta):
     __tablename__ = "documents"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    number = Column(Integer, nullable=False)
+    number = Column(String, nullable=False)
     name = Column(String, nullable=False)
     document_type = Column(
         SQLEnum(DocumentType, name="documen_type_enum"),
@@ -45,6 +46,7 @@ class Document(db.Model, Meta):
 
     project = relationship("Project", back_populates="documents")
     quotation = relationship("Quotation", back_populates="documents")
+    agreement = relationship("Agreement", back_populates="documents")
 
 
     def to_dict(self):
