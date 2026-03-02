@@ -5,10 +5,30 @@ from app.models.projects import Project
 from app.models.quotations import Quotation
 from app.services.base_service import BaseService
 from app.utils import response
+from datetime import datetime # Tambahkan import ini
 
 class DocumentService(BaseService):
     def __init__(self, db: Session):
         super().__init__(db, Document)
+
+    # --- Tambahkan Method Generator Ini ---
+    def generate_document_number(self, doc_type_enum, doc_name):
+        """
+        Format: (DocumentType)-(4 huruf nama doc)-ISODATETIME
+        Contoh: INV-SERT-20231027T103000
+        """
+        # 1. Ambil 3 huruf pertama dari tipe dokumen (contoh: INVOICE -> INV)
+        type_code = doc_type_enum.name[:3].upper()
+
+        # 2. Ambil 4 huruf pertama dari nama dokumen (hapus spasi dulu)
+        clean_name = "".join(doc_name.split())
+        name_code = clean_name[:4].upper().ljust(4, 'X') # ljust untuk jaga-jaga jika nama < 4 huruf
+
+        # 3. Ambil ISO Timestamp (Format: YYYYMMDDTHHMMSS agar rapi di string)
+        timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
+
+        return f"{type_code}-{name_code}-{timestamp}"
+    # ---------------------------------------
 
     def get_all_documents(self):
         """Get All dengan Serialisasi"""
@@ -25,14 +45,45 @@ class DocumentService(BaseService):
         return response(200, "Success", doc.to_dict())
 
     def create(self, data):
-        """Create Document dengan Validasi Enum"""
-        if 'document_type' in data and isinstance(data['document_type'], str):
-            try:
-                data['document_type'] = DocumentType[data['document_type']]
-            except KeyError:
-                return response(400, f"Invalid document type. Allowed: {[e.name for e in DocumentType]}")
+        """Create Document dengan Validasi Enum dan Auto-Generate Number"""
+        try:
+            doc_type_raw = data.get('document_type')
+            doc_name = data.get('name', 'DOC')
 
-        return super().create(data)
+            # 1. Validasi Enum (Konversi String ke Enum Object untuk logika)
+            if doc_type_raw and isinstance(doc_type_raw, str):
+                try:
+                    # Kita gunakan .upper() untuk jaga-jaga input huruf kecil
+                    enum_obj = DocumentType[doc_type_raw.upper()]
+                    data['document_type'] = enum_obj
+                except KeyError:
+                    return response(400, f"Invalid document type. Allowed: {[e.name for e in DocumentType]}")
+
+            # 2. Generate Number (Hanya jika belum ada)
+            if 'document_type' in data and not data.get('number'):
+                # Pastikan data['document_type'] sudah berupa Enum object
+                data['number'] = self.generate_document_number(data['document_type'], doc_name)
+
+            # 3. FIX: Pastikan ID User adalah Integer, bukan String
+            # Postgres sangat ketat, string '2' tidak dianggap sama dengan angka 2
+            for field in ['created_by', 'updated_by', 'project_id', 'quotation_id']:
+                if field in data and data[field] is not None:
+                    try:
+                        data[field] = int(data[field])
+                    except (ValueError, TypeError):
+                        data[field] = None # Set null jika data tidak valid
+
+            # 4. Sesaat sebelum kirim ke base_service, 
+            # Pastikan document_type adalah string/name-nya saja agar tidak error di driver SQL
+            if isinstance(data.get('document_type'), DocumentType):
+                data['document_type'] = data['document_type'].name
+
+            return super().create(data)
+
+        except Exception as e:
+            # Print ke terminal untuk kamu cek error detailnya
+            print(f"DEBUG ERROR: {str(e)}")
+            return response(500, f"Gagal simpan ke database: {str(e)}")
 
     def update(self, id, data):
         """Update Document"""
