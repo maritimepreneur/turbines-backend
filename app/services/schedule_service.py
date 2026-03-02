@@ -140,14 +140,19 @@ class ScheduleService(BaseService):
             return response(500, f"Error filtering schedules: {str(e)}")
 
     def get_my_schedules(self, user_id: int):
-        """Get schedules for logged-in user (employee)"""
+        """Get schedules for logged-in user (employee) — including tagged schedules"""
         try:
             employee = self.db.query(Employee).filter(Employee.user_id == user_id).first()
             if not employee:
                 return response(404, "Employee not found for this user")
             
             schedules = self.db.query(Schedule)\
-                .filter(Schedule.employee_id == employee.id)\
+                .filter(
+                    or_(
+                        Schedule.employee_id == employee.id,
+                        Schedule.tagged_ids.contains([employee.id])  # JSONB contains
+                    )
+                )\
                 .order_by(desc(Schedule.date))\
                 .all()
             
