@@ -25,7 +25,7 @@ class PaymentService:
                     "date": p.date.isoformat() if p.date else None,
                     "nominal": float(p.nominal),
                     "notes": p.notes,
-                    "invoice_number": p.invoice.number if p.invoice else None,
+                    "attachments": p.attachments,
                 } for p in pagination.items],
                 "pagination": {
                     "current_page": pagination.page,
@@ -83,7 +83,7 @@ class PaymentService:
         }
 
     def generate_payment_code(self, invoice):
-        invoice_number = invoice.number  # INV-STA-SVC-000001
+        invoice_number = invoice.number
 
         prefix = f"PAY-{invoice_number}-"
 

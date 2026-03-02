@@ -1,16 +1,17 @@
 from sqlalchemy import Column, DateTime, Integer
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 class Meta:
     created_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(ZoneInfo("UTC")),
         nullable=False
     )
     updated_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(ZoneInfo("UTC")),
+        onupdate=lambda: datetime.now(ZoneInfo("UTC")),
         nullable=False
     )
     created_by = Column(Integer, nullable=True)

@@ -14,6 +14,7 @@ class Contact(db.Model, Meta):
     emails = Column(JSONB, nullable=False, default=list, server_default="[]")
     phone_numbers = Column(JSONB, nullable=False, default=list, server_default="[]")
     company = Column(String, nullable=False)
+    agreement_id = Column(Integer, ForeignKey("agreements.id"))
 
     partner_id = Column(
         Integer,
@@ -32,6 +33,7 @@ class Contact(db.Model, Meta):
     purchase_orders = relationship("Purchase_Order", back_populates="contact")
     invoices = relationship("Invoice", back_populates="contact")
     projects = relationship("Project", back_populates="contact")
+    agreement = relationship("Agreement", back_populates="contacts")
 
     def to_dict(self):
         """
