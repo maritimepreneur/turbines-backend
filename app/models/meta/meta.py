@@ -5,13 +5,13 @@ from zoneinfo import ZoneInfo
 class Meta:
     created_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(ZoneInfo("UTC")),
+        default=lambda: datetime.now(ZoneInfo("Asia/Jakarta")),
         nullable=False
     )
     updated_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(ZoneInfo("UTC")),
-        onupdate=lambda: datetime.now(ZoneInfo("UTC")),
+        default=lambda: datetime.now(ZoneInfo("Asia/Jakarta")),
+        onupdate=lambda: datetime.now(ZoneInfo("Asia/Jakarta")),
         nullable=False
     )
     created_by = Column(Integer, nullable=True)

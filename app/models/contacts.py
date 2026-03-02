@@ -14,6 +14,7 @@ class Contact(db.Model, Meta):
     emails = Column(JSONB, nullable=False, default=list, server_default="[]")
     phone_numbers = Column(JSONB, nullable=False, default=list, server_default="[]")
     company = Column(String, nullable=False)
+    agreement_id = Column(Integer, ForeignKey("agreements.id"))
 
     partner_id = Column(
         Integer,
