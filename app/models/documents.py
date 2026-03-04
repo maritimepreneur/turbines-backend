@@ -43,6 +43,8 @@ class Document(db.Model, Meta):
         ForeignKey("quotations.id"),
         nullable=True
     )
+    agreement_id = Column(Integer, ForeignKey("agreements.id"), nullable=True)
+
 
     project = relationship("Project", back_populates="documents")
     quotation = relationship("Quotation", back_populates="documents")
