@@ -50,7 +50,7 @@ class Item(db.Model, Meta):
             "cost": float(self.cost),
             "amount": float(self.amount),
             "billed_amount": float(self.billed_amount),
-            "type": self.type.value if self.value else None,
+            "type": self.type.value if self.type else None,
             "amount_type": self.amount_type,
             "attachments": self.attachments,
             "meta": {
