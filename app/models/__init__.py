@@ -21,3 +21,8 @@ from .leave_history import Leave_History
 from .attendances import Attendance
 from .agreements import Agreement
 from .agreement_partners import AgreementPartner
+from .formdata import FormData, SelectionStatus
+from .gform import Gform, GformType
+from .registration import Registration, TraningCourseLevel, RegistrationPaymentStatus, RegistrationPaymentType
+from .scholarship import Scholarship, ScholarshipStatus
+from .specialization import Specialization
