@@ -46,9 +46,10 @@ class InvoiceService(BaseService):
         if validation:
             return validation
 
+        # PERBAIKAN: Indentasi if existing dirapikan agar masuk ke dalam blok pengecekan nomor
         if 'number' in updated_data and updated_data['number'] != invoice.number:
-                existing = self.db.query(Invoice).filter(Invoice.number == updated_data['number']).first()
-        if existing:
+            existing = self.db.query(Invoice).filter(Invoice.number == updated_data['number']).first()
+            if existing:
                 return response(400, "Invoice number already exists")
 
         return super().update(invoice_id, updated_data)
