@@ -23,7 +23,14 @@ class Payment(db.Model, Meta):
         nullable=True
     )
 
+    registration_id = Column(
+        Integer,
+        ForeignKey("registration.id"),
+        nullable=True
+    )
+
     invoice = relationship("Invoice", back_populates="payments")
+    registration = relationship("Registration", back_populates="payments")
 
     def to_dict(self):
         return {

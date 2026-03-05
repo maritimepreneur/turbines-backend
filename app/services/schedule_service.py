@@ -50,18 +50,15 @@ class ScheduleService(BaseService):
     
     def create_schedule(self, user_id: int, user_role: str, data: dict):
         try:
-            if user_role == "USER":
-                employee = self.db.query(Employee).filter(Employee.user_id == user_id).first()
-                if not employee:
-                    return response(404, "Employee not found")
-                data["employee_id"] = employee.id
-            else:  
-                if 'employee_id' not in data or data['employee_id'] is None:
-                    return response(400, "field employee_id is required for admin/HR")
-                employee = self.db.query(Employee).filter(Employee.id == data['employee_id']).first()
-                if not employee:
-                    return response(404, f"Employee with id {data['employee_id']} not found. Please check employee list.")
-
+            # Cari employee berdasarkan user_id yang sedang login
+            employee = self.db.query(Employee).filter(Employee.user_id == user_id).first()
+            if not employee:
+                return response(404, "Employee not found for this user")
+                
+            # Tetapkan employee_id berdasarkan employee yang ditemukan
+            data["employee_id"] = employee.id
+                
+            # Buat schedule baru
             return self.create(data)
         except Exception as e:
             return response(500, str(e))
@@ -140,14 +137,19 @@ class ScheduleService(BaseService):
             return response(500, f"Error filtering schedules: {str(e)}")
 
     def get_my_schedules(self, user_id: int):
-        """Get schedules for logged-in user (employee)"""
+        """Get schedules for logged-in user (employee) — including tagged schedules"""
         try:
             employee = self.db.query(Employee).filter(Employee.user_id == user_id).first()
             if not employee:
                 return response(404, "Employee not found for this user")
             
             schedules = self.db.query(Schedule)\
-                .filter(Schedule.employee_id == employee.id)\
+                .filter(
+                    or_(
+                        Schedule.employee_id == employee.id,
+                        Schedule.tagged_ids.contains([employee.id])  # JSONB contains
+                    )
+                )\
                 .order_by(desc(Schedule.date))\
                 .all()
             
