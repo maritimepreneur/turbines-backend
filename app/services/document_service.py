@@ -5,10 +5,82 @@ from app.models.projects import Project
 from app.models.quotations import Quotation
 from app.services.base_service import BaseService
 from app.utils import response
+from datetime import datetime
 
 class DocumentService(BaseService):
     def __init__(self, db: Session):
         super().__init__(db, Document)
+
+    def generate_document_number(self, doc_type_enum, doc_name):
+        """
+        Format: (Prefix Enum)-(4 huruf nama doc)-ISODATETIME
+        Contoh: INV-SERT-20260302T113000
+        """
+        # 1. Ambil 3 huruf pertama dari Key Enum (Contoh: INVOICE -> INV, QUOTATION -> QUO)
+        # Jika PO (2 huruf), dia tetap terambil PO
+        type_prefix = doc_type_enum.name[:3].upper()
+
+        # 2. Ambil 4 huruf pertama dari nama dokumen (hapus spasi)
+        clean_name = "".join(doc_name.split())
+        name_snippet = clean_name[:4].upper().ljust(4, 'X') # ljust: tambah X jika nama kurang dari 4 huruf
+
+        # 3. Timestamp format ISO rapat (Tanpa timezone object untuk menghindari error Windows)
+        timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
+
+        return f"{type_prefix}-{name_snippet}-{timestamp}"
+
+    def create(self, data):
+        """Create Document dengan Validasi Enum dan Auto-Generate Number"""
+        try:
+            doc_type_raw = data.get('document_type')
+            doc_name = data.get('name', 'DOC')
+
+            # 1. Konversi input string ke Enum Object
+            if doc_type_raw and isinstance(doc_type_raw, str):
+                try:
+                    # Mencari berdasarkan Key Enum (Misal input "INVOICE")
+                    enum_obj = DocumentType[doc_type_raw.upper()]
+                    data['document_type'] = enum_obj
+                except KeyError:
+                    # Jika tidak ketemu di Key, coba cari berdasarkan Value (Misal input "Invoice")
+                    found = False
+                    for member in DocumentType:
+                        if member.value.lower() == doc_type_raw.lower():
+                            data['document_type'] = member
+                            found = True
+                            break
+                    if not found:
+                        return response(400, f"Invalid document type. Allowed keys: {[e.name for e in DocumentType]}")
+
+            # 2. Generate Number otomatis sebelum simpan
+            # Pastikan kita sudah punya enum object untuk generate number
+            current_enum = data.get('document_type', DocumentType.OTHER)
+            if not data.get('number'):
+                data['number'] = self.generate_document_number(current_enum, doc_name)
+
+            # 3. Fix Timezone Error & Integer Casting
+            # Gunakan datetime.now() langsung tanpa timezone key 'UTC' agar tidak error di Windows
+            now = datetime.now()
+            data['created_at'] = now
+            data['updated_at'] = now
+
+            for field in ['created_by', 'updated_by', 'project_id', 'quotation_id', 'agreement_id']:
+                if field in data and data[field] is not None:
+                    try:
+                        data[field] = int(data[field])
+                    except (ValueError, TypeError):
+                        data[field] = None
+
+            # 4. Kembalikan Enum ke bentuk string .name sebelum masuk ke super().create
+            # agar sesuai dengan ekspektasi SQLAlchemy SQLEnum
+            if isinstance(data.get('document_type'), DocumentType):
+                data['document_type'] = data['document_type'].name
+
+            return super().create(data)
+
+        except Exception as e:
+            print(f"DEBUG ERROR: {str(e)}")
+            return response(500, f"Gagal simpan ke database: {str(e)}")
 
     def get_all_documents(self):
         """Get All dengan Serialisasi"""
@@ -18,38 +90,24 @@ class DocumentService(BaseService):
     def get_document_by_id(self, id):
         """Get One dengan Serialisasi"""
         doc = self._get_by_id(id) 
-    
         if not doc:
             return response(404, "Document not found", None)
-        
         return response(200, "Success", doc.to_dict())
-
-    def create(self, data):
-        """Create Document dengan Validasi Enum"""
-        if 'document_type' in data and isinstance(data['document_type'], str):
-            try:
-                data['document_type'] = DocumentType[data['document_type']]
-            except KeyError:
-                return response(400, f"Invalid document type. Allowed: {[e.name for e in DocumentType]}")
-
-        return super().create(data)
 
     def update(self, id, data):
         """Update Document"""
         if 'document_type' in data and isinstance(data['document_type'], str):
             try:
-                data['document_type'] = DocumentType[data['document_type']]
+                data['document_type'] = DocumentType[data['document_type'].upper()]
             except KeyError:
-                return response(400, f"Invalid document type. Allowed: {[e.name for e in DocumentType]}")
-
+                return response(400, "Invalid document type")
         return super().update(id, data)
 
     def delete(self, id):
-        """Delete Document"""
         return super().delete(id)
 
     def get_document_list_filter(self, payload):
-        """Search, Filter, and Pagination for Documents"""
+        """Search, Filter, and Pagination"""
         try:
             page_size = payload.get('page_size', 25)
             page_number = payload.get('page_number', 1)
@@ -107,8 +165,6 @@ class DocumentService(BaseService):
                     "total_items": total_items
                 }
             }
-
             return response(200, "Success", result)
-
         except Exception as e:
             return response(500, f"Error processing document filter: {str(e)}")
