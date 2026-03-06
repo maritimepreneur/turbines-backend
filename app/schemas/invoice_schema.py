@@ -8,7 +8,7 @@ class InvoiceSchema(BaseSchema):
             **BaseSchema.get_schema(namespace),
             "data": fields.Nested(namespace.model("Invoice", {
                 "id": fields.Integer,
-                "number": fields.Integer,
+                "number": fields.String, # Diperbaiki menjadi String
                 "created": fields.String(description="ISO 8601 Datetime"),
                 "period": fields.String(description="ISO 8601 Date"),
                 "due_date": fields.String(description="ISO 8601 Date"),
@@ -33,7 +33,7 @@ class InvoiceSchema(BaseSchema):
                 }), allow_null=True),
                 "purchase_order": fields.Nested(namespace.model("InvoicePO", {
                     "id": fields.Integer,
-                    "po_number": fields.String(attribute="number"), # Asumsi di PO ada field number
+                    "po_number": fields.String(attribute="number"),
                 }), allow_null=True),
                 "meta": fields.Nested(namespace.model("Meta", {
                     "created_at": fields.String(description="ISO 8601 Date"),
@@ -47,7 +47,7 @@ class InvoiceSchema(BaseSchema):
     @classmethod
     def post_schema(cls, namespace: Model):
         return namespace.model("InvoicePostRequest", {
-            "number": fields.Integer(required=True, description="Unique Invoice Number"),
+            "number": fields.String(required=True, description="Unique Invoice Number"), # Diperbaiki menjadi String
             "period": fields.String(required=True, description="Format: YYYY-MM-DD"),
             "due_date": fields.String(required=True, description="Format: YYYY-MM-DD"),
             "billed_amount": fields.String(required=True, description="Numeric string, ex: 10000.00"),
@@ -87,7 +87,7 @@ class InvoiceSchema(BaseSchema):
         """Schema untuk List Response dengan Pagination"""
         invoice_item_model = namespace.model("InvoiceFilterItem", {
             "id": fields.Integer,
-            "number": fields.Integer,
+            "number": fields.String, # Diperbaiki menjadi String
             "period": fields.String,
             "due_date": fields.String,
             "total_amount": fields.String,
