@@ -17,8 +17,8 @@ class PartnerSchema(BaseSchema):
                 "partner_type": fields.String(
                     attribute=lambda x: x.partner_type.value if x and x.partner_type else None
                 ),
-                "service": fields.String,
-                "goods": fields.String,
+                "service": fields.Raw,
+                "goods": fields.Raw,
                 "meta": fields.Nested(namespace.model("Meta", {
                     "created_at": fields.String(description="ISO 8601 Date"),
                     "updated_at": fields.String(description="ISO 8601 Date"),
@@ -27,7 +27,7 @@ class PartnerSchema(BaseSchema):
                 })),
             }))
         })
-    
+
     @classmethod
     def post_schema(cls, namespace: Model):
         return namespace.model("PartnerPostResponse", {
@@ -36,8 +36,8 @@ class PartnerSchema(BaseSchema):
             "industry": fields.String(required=True),
             "company_type": fields.String(required=True),
             "partner_type": fields.String(required=True),
-            "service": fields.String,
-            "goods": fields.String,
+            "service": fields.Raw,
+            "goods": fields.Raw,
         })
 
     @classmethod
@@ -59,7 +59,7 @@ class PartnerSchema(BaseSchema):
     @classmethod
     def filter_response_schema(cls, namespace: Model):
         """ Schema untuk Output Response Filter (List + Pagination) """
-        
+
         partner_item_model = namespace.model("PartnerFilterItem", {
             "id": fields.Integer,
             "name": fields.String,
@@ -67,8 +67,8 @@ class PartnerSchema(BaseSchema):
             "industry": fields.String,
             "company_type": fields.String,
             "partner_type": fields.String,
-            "service": fields.String,
-            "goods": fields.String,
+            "service": fields.Raw,
+            "goods": fields.Raw,
             "created_at": fields.String
         })
 
@@ -89,4 +89,26 @@ class PartnerSchema(BaseSchema):
             "code": fields.Integer(default=200),
             "status": fields.String(default="success"),
             "data": fields.Nested(filter_data_model)
+        })
+
+    @classmethod
+    def contacts_response_schema(cls, namespace: Model):
+        """ Schema untuk Response List Contacts milik Partner """
+
+        contact_item_model = namespace.model("PartnerContactItem", {
+            "id": fields.Integer,
+            "name": fields.String,
+            "emails": fields.List(fields.String),
+            "phone_numbers": fields.List(fields.String),
+            "company": fields.String,
+            "role": fields.String,
+            "position": fields.String,
+            "created_at": fields.String,
+        })
+
+        return namespace.model("PartnerContactsResponse", {
+            "message": fields.String(default="Success"),
+            "code": fields.Integer(default=200),
+            "status": fields.String(default="success"),
+            "data": fields.List(fields.Nested(contact_item_model))
         })

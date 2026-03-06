@@ -9,7 +9,7 @@ class DocumentSchema(BaseSchema):
             **BaseSchema.get_schema(namespace),
             "data": fields.Nested(namespace.model("Document", {
                 "id": fields.Integer,
-                "number": fields.Integer,
+                "number": fields.String,
                 "name": fields.String,
                 "document_type": fields.String,
                 "project_id": fields.Integer,

@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, desc, asc
-from app.models.partners import Partner, CompanyType, PartnerType 
+from app.models.partners import Partner, CompanyType, PartnerType
+from app.models.contacts import Contact
 from app.services.base_service import BaseService
 from app.utils import response
 
@@ -12,24 +13,34 @@ class PartnerService(BaseService):
         """ Get all Partner """
         partners = self.db.query(Partner).all()
         return response(200, "Success", partners or [])
-    
+
     def create(self, partner_data):
         """ Register a new Partner """
         return super().create(partner_data)
-    
+
     def get_partner_by_id(self, partner_id):
         """ Get Partner details """
         partner = self._get_by_id(partner_id)
         if not partner:
             return response(404, "Partner not found", None)
         return super().get_by_id(partner_id)
-    
+
     def update_partner_by_id(self, partner_id, updated_data):
         """ Update Partner """
         partner = self._get_by_id(partner_id)
         if not partner:
             return response(404, partner_id)
         return super().update(partner_id, updated_data)
+
+    def get_partner_contacts(self, partner_id):
+        """ Get all contacts belonging to a specific partner """
+        partner = self._get_by_id(partner_id)
+        if not partner:
+            return response(404, "Partner not found")
+
+        contacts = self.db.query(Contact).filter(Contact.partner_id == partner_id).all()
+        data = [contact.to_dict() for contact in contacts]
+        return response(200, "Success", data)
 
     def get_partner_list_filter(self, payload):
         try:
@@ -54,7 +65,7 @@ class PartnerService(BaseService):
                         Partner.initials.ilike(f"%{search_query}%")
                     )
                 )
-            
+
             if industries_filter:
                 conditions = [Partner.industry.ilike(f"%{x}%") for x in industries_filter if x]
                 if conditions:
@@ -70,14 +81,12 @@ class PartnerService(BaseService):
                 if conditions:
                     query = query.filter(or_(*conditions))
 
-
             if company_types_filter:
                 enum_values = []
                 for item in company_types_filter:
                     for member in CompanyType:
                         if member.value == item:
                             enum_values.append(member)
-                
                 if enum_values:
                     query = query.filter(Partner.company_type.in_(enum_values))
 
@@ -87,14 +96,13 @@ class PartnerService(BaseService):
                     for member in PartnerType:
                         if member.value == item:
                             enum_values.append(member)
-                
                 if enum_values:
                     query = query.filter(Partner.partner_type.in_(enum_values))
 
             if hasattr(Partner, sort_by):
                 sort_column = getattr(Partner, sort_by)
             else:
-                sort_column = Partner.id 
+                sort_column = Partner.id
 
             if sort_order.upper() == 'DESC':
                 query = query.order_by(desc(sort_column))
@@ -104,9 +112,8 @@ class PartnerService(BaseService):
             total_items = query.count()
             total_pages = (total_items + page_size - 1) // page_size
             offset = (page_number - 1) * page_size
-            
+
             raw_data = query.offset(offset).limit(page_size).all()
-            
             data = [partner.to_dict() for partner in raw_data]
 
             result = {
@@ -118,7 +125,7 @@ class PartnerService(BaseService):
                     "total_items": total_items
                 }
             }
-            
+
             return response(200, "Success", result)
 
         except Exception as e:

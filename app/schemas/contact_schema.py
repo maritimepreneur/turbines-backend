@@ -5,6 +5,18 @@ class ContactSchema(BaseSchema):
     @classmethod
     def get_schema(cls, namespace: Model):
         """ Schema untuk menampilkan detail Contact (Standard) """
+
+        partner_model = namespace.model("ContactPartnerDetail", {
+            "id": fields.Integer,
+            "name": fields.String,
+            "initials": fields.String,
+            "industry": fields.String,
+            "company_type": fields.String,
+            "partner_type": fields.String,
+            "service": fields.Raw,
+            "goods": fields.Raw,
+        })
+
         return namespace.model("ContactResponse", {
             **BaseSchema.get_schema(namespace),
             "data": fields.Nested(namespace.model("Contact", {
@@ -13,7 +25,10 @@ class ContactSchema(BaseSchema):
                 "emails": fields.List(fields.String),
                 "phone_numbers": fields.List(fields.String),
                 "company": fields.String,
+                "role": fields.String(description="Role of the contact"),
+                "position": fields.String(description="Position of the contact"),
                 "partner_id": fields.Integer(required=False, allow_null=True),
+                "partner": fields.Nested(partner_model, allow_null=True, skip_none=True),
                 "meta": fields.Nested(namespace.model("Meta", {
                     "created_at": fields.String(description="ISO 8601 Date"),
                     "updated_at": fields.String(description="ISO 8601 Date"),
@@ -22,15 +37,17 @@ class ContactSchema(BaseSchema):
                 })),
             }))
         })
-    
+
     @classmethod
     def post_schema(cls, namespace: Model):
         """ Schema untuk Create/Update Contact """
         return namespace.model("ContactPostRequest", {
             "name": fields.String(required=True),
             "emails": fields.List(fields.String, required=True),
-            "phone_numbers": fields.List(fields.String ,required=True),
+            "phone_numbers": fields.List(fields.String, required=True),
             "company": fields.String,
+            "role": fields.String(description="Role of the contact", required=False),
+            "position": fields.String(description="Position of the contact", required=False),
             "partner_id": fields.Integer(description="Optional Partner ID", required=False, allow_null=True)
         })
 
@@ -54,15 +71,29 @@ class ContactSchema(BaseSchema):
     @classmethod
     def filter_response_schema(cls, namespace: Model):
         """ Schema untuk Output Response Filter (List + Pagination) """
-        
+
+        partner_inline_model = namespace.model("ContactFilterPartnerDetail", {
+            "id": fields.Integer,
+            "name": fields.String,
+            "initials": fields.String,
+            "industry": fields.String,
+            "company_type": fields.String,
+            "partner_type": fields.String,
+            "service": fields.Raw,
+            "goods": fields.Raw,
+        })
+
         contact_item_model = namespace.model("ContactFilterItem", {
             "id": fields.Integer,
             "name": fields.String,
             "emails": fields.List(fields.String),
             "phone_numbers": fields.List(fields.String),
             "company": fields.String,
+            "role": fields.String,
+            "position": fields.String,
             "partner_id": fields.Integer,
-            "created_at": fields.String
+            "partner": fields.Nested(partner_inline_model, allow_null=True, skip_none=True),
+            "created_at": fields.String,
         })
 
         pagination_model = namespace.model("ContactPaginationInfo", {
