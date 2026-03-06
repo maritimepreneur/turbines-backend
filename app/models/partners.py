@@ -17,6 +17,7 @@ class CompanyType(Enum):
 class PartnerType(Enum):
     VENDOR = "Vendor"
     CLIENT = "Client"
+    UNCATEGORIED = "Uncategorized"
     BOTH = "Both"
 
 class Partner(db.Model, Meta):
