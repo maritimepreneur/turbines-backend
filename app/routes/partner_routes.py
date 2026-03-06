@@ -11,6 +11,7 @@ partner_response_schema = PartnerSchema.get_schema(partner_ns)
 partner_post_schema = PartnerSchema.post_schema(partner_ns)
 partner_filter_schema = PartnerSchema.filter_schema(partner_ns)
 partner_filter_response = PartnerSchema.filter_response_schema(partner_ns)
+partner_contacts_response = PartnerSchema.contacts_response_schema(partner_ns)
 
 @partner_ns.route("/")
 class PartnerList(Resource):
@@ -21,7 +22,7 @@ class PartnerList(Resource):
     def get(self):
         """ Get all partners (Standard) """
         return partner_svc.get_all_partners()
-    
+
     @jwt_required()
     @role_required("ADMIN", "BIZDEV", "FINANCE", "OPERATION", "USER")
     @partner_ns.doc(security="Bearer Auth")
@@ -30,7 +31,7 @@ class PartnerList(Resource):
     def post(self):
         """ Search and Filter Partners with Pagination """
         return partner_svc.get_partner_list_filter(partner_ns.payload)
-    
+
 @partner_ns.route("/create")
 class PartnerCreate(Resource):
     @jwt_required()
@@ -41,7 +42,7 @@ class PartnerCreate(Resource):
     def post(self):
         """ Create a new partner """
         return partner_svc.create(partner_ns.payload)
-    
+
 @partner_ns.route("/<int:id>")
 class PartnerDetail(Resource):
     @jwt_required()
@@ -51,7 +52,7 @@ class PartnerDetail(Resource):
     def get(self, id):
         """ Get detail partner """
         return partner_svc.get_partner_by_id(id)
-    
+
     @jwt_required()
     @role_required("ADMIN", "BIZDEV", "FINANCE")
     @partner_ns.doc(security="Bearer Auth")
@@ -60,10 +61,20 @@ class PartnerDetail(Resource):
     def put(self, id):
         """ Update partner detail """
         return partner_svc.update(id, partner_ns.payload)
-    
+
     @jwt_required()
     @role_required("ADMIN")
     @partner_ns.doc(security="Bearer Auth")
     def delete(self, id):
         """ Delete a partner """
         return partner_svc.delete(id)
+
+@partner_ns.route("/<int:id>/contacts")
+class PartnerContacts(Resource):
+    @jwt_required()
+    @role_required("ADMIN", "BIZDEV", "FINANCE", "OPERATION", "USER")
+    @partner_ns.doc(security="Bearer Auth")
+    @partner_ns.response(200, "Success", partner_contacts_response)
+    def get(self, id):
+        """ Get all contacts belonging to a specific partner """
+        return partner_svc.get_partner_contacts(id)

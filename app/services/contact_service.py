@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload  # ← tambah joinedload
 from sqlalchemy import or_, desc, asc, cast, String
 from app.models.contacts import Contact
 from app.services.base_service import BaseService
@@ -11,11 +11,11 @@ class ContactService(BaseService):
 
     def get_all_contacts(self):
         """ Get All Contact """
-        contacts = self.db.query(Contact).all()
+        contacts = self.db.query(Contact).options(joinedload(Contact.partner)).all()  # ← update
         return response(200, "Success", contacts)
-    
+
     def create(self, contact_data):
-        """" Register a new contact """
+        """ Register a new contact """
         partner_id = contact_data.get("partner_id")
         emails = contact_data.get("emails")
         phones = contact_data.get("phone_numbers")
@@ -33,20 +33,20 @@ class ContactService(BaseService):
             return response(400, "emails and phone_numbers must be list")
 
         return super().create(contact_data)
-    
+
     def get_contact_by_id(self, contact_id):
         """ Get Contact details """
-        contact = self._get_by_id(contact_id)
+        contact = self.db.query(Contact).options(joinedload(Contact.partner)).filter(Contact.id == contact_id).first()  # ← update
         if not contact:
             return response(404, "Contact not found")
-        return super().get_by_id(contact_id)
-    
+        return response(200, "Success", contact)
+
     def update_contact_by_id(self, contact_id, updated_data):
         """ Update Contact """
         contact = self._get_by_id(contact_id)
         if not contact:
             return response(404, contact_id)
-        
+
         if "emails" in updated_data:
             contact.emails = list(set(contact.emails + updated_data["emails"]))
 
@@ -69,11 +69,11 @@ class ContactService(BaseService):
             emails_filter = payload.get('emails', [])
             phones_filter = payload.get('phone_numbers', [])
             companies_filter = payload.get('companies', [])
-        
+
             start_date = payload.get('start_date')
             end_date = payload.get('end_date')
 
-            query = self.db.query(Contact)
+            query = self.db.query(Contact).options(joinedload(Contact.partner))  # ← update
 
             if search_query:
                 query = query.filter(
@@ -85,18 +85,18 @@ class ContactService(BaseService):
 
             if start_date and end_date:
                 query = query.filter(Contact.created_at.between(start_date, end_date))
-            
+
             else:
                 if names_filter:
                     conditions = [Contact.name.ilike(f"%{n}%") for n in names_filter if n]
                     if conditions:
                         query = query.filter(or_(*conditions))
-                
+
                 if companies_filter:
                     conditions = [Contact.company.ilike(f"%{c}%") for c in companies_filter if c]
                     if conditions:
                         query = query.filter(or_(*conditions))
-                
+
                 if emails_filter:
                     query = query.filter(Contact.emails.op('?|')(emails_filter))
 
@@ -106,7 +106,7 @@ class ContactService(BaseService):
             if hasattr(Contact, sort_by):
                 sort_column = getattr(Contact, sort_by)
             else:
-                sort_column = Contact.id 
+                sort_column = Contact.id
 
             if sort_order.upper() == 'DESC':
                 query = query.order_by(desc(sort_column))
@@ -116,9 +116,9 @@ class ContactService(BaseService):
             total_items = query.count()
             total_pages = (total_items + page_size - 1) // page_size
             offset = (page_number - 1) * page_size
-            
+
             raw_data = query.offset(offset).limit(page_size).all()
-            
+
             data = [contact.to_dict() for contact in raw_data]
 
             result = {
@@ -130,7 +130,7 @@ class ContactService(BaseService):
                     "total_items": total_items
                 }
             }
-            
+
             return response(200, "Success", result)
 
         except Exception as e:

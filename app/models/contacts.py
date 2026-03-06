@@ -15,6 +15,8 @@ class Contact(db.Model, Meta):
     phone_numbers = Column(JSONB, nullable=False, default=list, server_default="[]")
     company = Column(String, nullable=False)
     agreement_id = Column(Integer, ForeignKey("agreements.id"))
+    role = Column(String, nullable=True)  # Kolom baru untuk role
+    position = Column(String, nullable=True)  # Kolom baru untuk position
 
     partner_id = Column(
         Integer,
@@ -45,7 +47,10 @@ class Contact(db.Model, Meta):
             "emails": self.emails,
             "phone_numbers": self.phone_numbers,
             "company": self.company,
+            "role": self.role,
+            "position": self.position,
             "partner_id": self.partner_id,
+            "partner": self.partner.to_dict() if self.partner else None,  # ← tambah ini
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "created_by": self.created_by,
