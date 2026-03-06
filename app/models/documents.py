@@ -1,5 +1,5 @@
 from app.database import db
-from sqlalchemy import Column, Integer, String, ForeignKey, Enum as SQLEnum, UniqueConstraint
+from sqlalchemy import Column, Integer, String, ForeignKey, Enum as SQLEnum, UniqueConstraint, Text
 from enum import Enum
 from sqlalchemy.orm import relationship
 from app.models.meta.meta import Meta
@@ -28,6 +28,8 @@ class Document(db.Model, Meta):
         default=DocumentType.OTHER,
         nullable=False
     )
+    url = Column(String, nullable=True)  # Kolom baru untuk URL
+    description = Column(Text, nullable=True)  # Kolom baru untuk deskripsi
 
     __table_args__ = (
         UniqueConstraint("number", name="uq_document_code"),
@@ -45,11 +47,9 @@ class Document(db.Model, Meta):
     )
     agreement_id = Column(Integer, ForeignKey("agreements.id"), nullable=True)
 
-
     project = relationship("Project", back_populates="documents")
     quotation = relationship("Quotation", back_populates="documents")
     agreement = relationship("Agreement", back_populates="documents")
-
 
     def to_dict(self):
         return {
@@ -57,6 +57,8 @@ class Document(db.Model, Meta):
             "number": self.number,
             "name": self.name,
             "document_type": self.document_type.value if self.document_type else None,
+            "url": self.url,  # Tambahkan URL ke dictionary
+            "description": self.description,  # Tambahkan deskripsi ke dictionary
             "project_id": self.project_id,
             "quotation_id": self.quotation_id,
             "meta": {
