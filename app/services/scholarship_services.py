@@ -61,7 +61,7 @@ class ScholarshipService:
 
         new_scholarship = Scholarship(
             name=data.get("name"),
-            status=ScholarshipStatus(data.get("status")),
+            status=ScholarshipStatus.ACTIVE,
             date=data.get("date"),
             type=data.get("type"),
             category=data.get("category"),

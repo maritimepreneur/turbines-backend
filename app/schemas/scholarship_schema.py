@@ -31,7 +31,6 @@ class ScholarshipSchema(BaseSchema):
     def post_schema(cls, namespace: Model):
         return namespace.model("ScholarshipPostRequest", {
             "name": fields.String(required=True),
-            "status": fields.String(enum=["Active", "Deactive"], required=True),
             "date": fields.Date(required=True),
             "type": fields.String(required=True),
             "category": fields.String(required=True),
