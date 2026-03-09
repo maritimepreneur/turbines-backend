@@ -73,11 +73,8 @@ def create_app():
         security='Bearer Auth'
     )
 
-    from .routes import (
-        auth_ns, contact_ns, partner_ns, lead_ns, employee_ns, attendance_ns, 
-        vendor_ns, purchase_order_ns, quotation_ns, document_ns, items_ns,  
-        expense_ns, schedule_ns, invoice_ns, payment_ns, approval_ns, project_ns
-    )
+    # Import namespaces
+    from .routes import auth_ns, contact_ns, partner_ns, lead_ns, employee_ns, attendance_ns, vendor_ns, purchase_order_ns, quotation_ns, document_ns, items_ns,  expense_ns, schedule_ns, invoice_ns, payment_ns, approval_ns, specialization_ns, agreement_ns, scholarship_ns
     
     api.add_namespace(auth_ns, path="/api/auth")
     api.add_namespace(contact_ns, path="/api/contacts")
@@ -95,6 +92,9 @@ def create_app():
     api.add_namespace(schedule_ns, path="/api/schedules")
     api.add_namespace(payment_ns, path="/api/payments")
     api.add_namespace(approval_ns, path="/api/approvals")
+    api.add_namespace(agreement_ns, path="/api/agreements")
+    api.add_namespace(specialization_ns, path="/api/specializations")
+    api.add_namespace(scholarship_ns, path="/api/scholarships")
     api.add_namespace(project_ns, path="/api/projects")
 
     return app

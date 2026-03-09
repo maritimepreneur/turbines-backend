@@ -50,18 +50,15 @@ class ScheduleService(BaseService):
     
     def create_schedule(self, user_id: int, user_role: str, data: dict):
         try:
-            if user_role == "USER":
-                employee = self.db.query(Employee).filter(Employee.user_id == user_id).first()
-                if not employee:
-                    return response(404, "Employee not found")
-                data["employee_id"] = employee.id
-            else:  
-                if 'employee_id' not in data or data['employee_id'] is None:
-                    return response(400, "field employee_id is required for admin/HR")
-                employee = self.db.query(Employee).filter(Employee.id == data['employee_id']).first()
-                if not employee:
-                    return response(404, f"Employee with id {data['employee_id']} not found. Please check employee list.")
-
+            # Cari employee berdasarkan user_id yang sedang login
+            employee = self.db.query(Employee).filter(Employee.user_id == user_id).first()
+            if not employee:
+                return response(404, "Employee not found for this user")
+                
+            # Tetapkan employee_id berdasarkan employee yang ditemukan
+            data["employee_id"] = employee.id
+                
+            # Buat schedule baru
             return self.create(data)
         except Exception as e:
             return response(500, str(e))
