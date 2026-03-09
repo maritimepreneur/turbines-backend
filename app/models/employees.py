@@ -66,6 +66,8 @@ class Employee(db.Model, Meta):
     img_url = Column(String, nullable=False)
     signature_img_url = Column(String, nullable=False)
     signature_scale = Column(Float, nullable=False)
+    division = Column(String, nullable=False)
+    role = Column(String, nullable=False)
 
     user_id = Column(
         Integer,

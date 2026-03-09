@@ -47,6 +47,15 @@ class Quotation(db.Model, Meta):
             "contact_id": self.contact_id,
             "partner_id": self.partner_id,
             "lead_id": self.lead_id,
+            "item": {
+                "name": self.items.name,
+                "cost": self.items.cost,
+                "amount": self.items.amount,
+                "billed_amount": self.items.billed_amount,
+                "type": self.items.type,
+                "amount_type": self.items.amount_type,
+                "attachments": self.items.attachments
+            },
             "meta": {
                 "created_at": self.created_at.isoformat() if self.created_at else None,
                 "updated_at": self.updated_at.isoformat() if self.updated_at else None,

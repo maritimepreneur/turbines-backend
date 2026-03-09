@@ -4,6 +4,7 @@ from app.models.contacts import Contact
 from app.services.base_service import BaseService
 from app.utils import response
 from app.models.partners import Partner
+from app.models.contact_partners import ContactPartner
 
 class ContactService(BaseService):
     def __init__(self, db: Session):
@@ -11,32 +12,57 @@ class ContactService(BaseService):
 
     def get_all_contacts(self):
         """ Get All Contact """
-        contacts = self.db.query(Contact).options(joinedload(Contact.partner)).all()  # ← update
+        contacts = (
+            self.db.query(Contact).options(
+                joinedload(Contact.contact_partners)
+                .joinedload(ContactPartner.partner)
+            ).all()
+        )
         return response(200, "Success", contacts)
 
     def create(self, contact_data):
         """ Register a new contact """
-        partner_id = contact_data.get("partner_id")
+        partner_ids = contact_data.pop("partner_ids", [])
+
+        if partner_ids is None:
+            partner_ids = []
+        elif isinstance(partner_ids, int):
+            partner_ids = [partner_ids]
+        elif not isinstance(partner_ids, list):
+            return response(400, "Partner ids must be integer or list of integers")
+
         emails = contact_data.get("emails")
         phones = contact_data.get("phone_numbers")
 
-        if partner_id in (0, "0"):
-            partner_id = None
-            contact_data["partner_id"] = None
-
-        if partner_id is not None:
-            partner = self.db.get(Partner, partner_id)
-            if not partner:
-                return response(404, "Partner not found")
-
         if not isinstance(emails, list) or not isinstance(phones, list):
             return response(400, "emails and phone_numbers must be list")
+        
+        result_body, _ = super().create(contact_data)
+        contact = result_body["data"]
 
-        return super().create(contact_data)
+        for pid in partner_ids:
+            cp = ContactPartner(
+                contact_id = contact.id,
+                partner_id = pid
+            )
+            self.db.add(cp)
+        
+        self.db.commit()
+        self.db.refresh(contact)
+
+        return response(201, "Action Success", contact)
 
     def get_contact_by_id(self, contact_id):
         """ Get Contact details """
-        contact = self.db.query(Contact).options(joinedload(Contact.partner)).filter(Contact.id == contact_id).first()  # ← update
+        contact = (
+            self.db.query(Contact).options(
+                joinedload(Contact.contact_partners)
+                .joinedload(ContactPartner.partner)
+            )
+            .filter(Contact.id == contact_id)
+            .first()
+        )
+
         if not contact:
             return response(404, "Contact not found")
         return response(200, "Success", contact)
@@ -73,7 +99,7 @@ class ContactService(BaseService):
             start_date = payload.get('start_date')
             end_date = payload.get('end_date')
 
-            query = self.db.query(Contact).options(joinedload(Contact.partner))  # ← update
+            query = self.db.query(Contact).options(joinedload(Contact.contact_partners))  # ← update
 
             if search_query:
                 query = query.filter(

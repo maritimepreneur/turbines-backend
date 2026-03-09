@@ -15,27 +15,23 @@ class Contact(db.Model, Meta):
     phone_numbers = Column(JSONB, nullable=False, default=list, server_default="[]")
     company = Column(String, nullable=False)
     agreement_id = Column(Integer, ForeignKey("agreements.id"))
-    role = Column(String, nullable=True)  # Kolom baru untuk role
-    position = Column(String, nullable=True)  # Kolom baru untuk position
-
-    partner_id = Column(
-        Integer,
-        ForeignKey("partners.id"),
-        nullable=True
-    )
+    nasionality = Column(String, nullable=True)
+    role = Column(String, nullable=True)
+    position = Column(String, nullable=True)
 
     __table_args__ = (
         UniqueConstraint("emails", name="uq_contact_emails"),
         UniqueConstraint("phone_numbers", name="uq_contact_phone_numbers"),
     )
 
-    partner = relationship("Partner", back_populates="contacts")
     leads = relationship("Lead", back_populates="contact")
     quotations = relationship("Quotation", back_populates="contact")
     purchase_orders = relationship("Purchase_Order", back_populates="contact")
     invoices = relationship("Invoice", back_populates="contact")
     projects = relationship("Project", back_populates="contact")
     agreement = relationship("Agreement", back_populates="contacts")
+    contact_partners = relationship("ContactPartner", back_populates="contact")
+    partners = relationship("Partner", secondary="contact_partners", viewonly=True)
 
     def to_dict(self):
         """
@@ -49,12 +45,13 @@ class Contact(db.Model, Meta):
             "company": self.company,
             "role": self.role,
             "position": self.position,
-            "partner_id": self.partner_id,
-            "partner": self.partner.to_dict() if self.partner else None,  # ← tambah ini
+            "partners": [p.to_dict() for p in self.partners] if self.partners else [],
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "created_by": self.created_by,
             "updated_by": self.updated_by
         }
         
-    """" Disini buat dict kalau perlu """
+    @property
+    def partners(self):
+        return [cp.partner for cp in self.contact_partners]

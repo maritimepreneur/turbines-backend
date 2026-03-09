@@ -27,8 +27,7 @@ class ContactSchema(BaseSchema):
                 "company": fields.String,
                 "role": fields.String(description="Role of the contact"),
                 "position": fields.String(description="Position of the contact"),
-                "partner_id": fields.Integer(required=False, allow_null=True),
-                "partner": fields.Nested(partner_model, allow_null=True, skip_none=True),
+                "partners": fields.List(fields.Nested(partner_model), description="List of partners"),
                 "meta": fields.Nested(namespace.model("Meta", {
                     "created_at": fields.String(description="ISO 8601 Date"),
                     "updated_at": fields.String(description="ISO 8601 Date"),
@@ -48,7 +47,7 @@ class ContactSchema(BaseSchema):
             "company": fields.String,
             "role": fields.String(description="Role of the contact", required=False),
             "position": fields.String(description="Position of the contact", required=False),
-            "partner_id": fields.Integer(description="Optional Partner ID", required=False, allow_null=True)
+            "partner_ids": fields.List(fields.Integer, description="List of partner IDs", required=False)
         })
 
     @classmethod
@@ -91,8 +90,7 @@ class ContactSchema(BaseSchema):
             "company": fields.String,
             "role": fields.String,
             "position": fields.String,
-            "partner_id": fields.Integer,
-            "partner": fields.Nested(partner_inline_model, allow_null=True, skip_none=True),
+            "partners": fields.List(fields.Nested(partner_inline_model)),
             "created_at": fields.String,
         })
 
