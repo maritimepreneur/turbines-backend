@@ -25,6 +25,7 @@ class ContactSchema(BaseSchema):
                 "emails": fields.List(fields.String),
                 "phone_numbers": fields.List(fields.String),
                 "company": fields.String,
+                "nasionality": fields.String,
                 "role": fields.String(description="Role of the contact"),
                 "position": fields.String(description="Position of the contact"),
                 "partners": fields.List(fields.Nested(partner_model), description="List of partners"),
@@ -45,6 +46,7 @@ class ContactSchema(BaseSchema):
             "emails": fields.List(fields.String, required=True),
             "phone_numbers": fields.List(fields.String, required=True),
             "company": fields.String,
+            "nasionality": fields.String(required=False),
             "role": fields.String(description="Role of the contact", required=False),
             "position": fields.String(description="Position of the contact", required=False),
             "partner_ids": fields.List(fields.Integer, description="List of partner IDs", required=False)
@@ -88,6 +90,7 @@ class ContactSchema(BaseSchema):
             "emails": fields.List(fields.String),
             "phone_numbers": fields.List(fields.String),
             "company": fields.String,
+            "nasionality": fields.String,
             "role": fields.String,
             "position": fields.String,
             "partners": fields.List(fields.Nested(partner_inline_model)),
