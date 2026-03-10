@@ -12,6 +12,7 @@ login_schema = AuthSchema.login_schema(auth_ns)
 token_response_schema = AuthSchema.token_response_schema(auth_ns)
 user_response_schema = AuthSchema.user_response_schema(auth_ns)
 validate_response_schema = AuthSchema.validate_response_schema(auth_ns)
+update_password_schema = AuthSchema.update_password_schema(auth_ns)
 
 @auth_ns.route("/register")
 class Register(Resource):
@@ -50,3 +51,14 @@ class ValidateToken(Resource):
         user_id = int(get_jwt_identity())
         claims = get_jwt()
         return auth_svc.validate_token(user_id, claims)
+    
+@auth_ns.route("/update-password")
+class UpdatePassword(Resource):
+
+    @jwt_required()
+    @auth_ns.doc(security="Bearer Auth")
+    @auth_ns.expect(update_password_schema)
+    def post(self):
+        """ Update user password """
+        user_id = int(get_jwt_identity())
+        return auth_svc.update_password(user_id, auth_ns.payload)

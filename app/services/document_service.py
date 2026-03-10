@@ -16,17 +16,10 @@ class DocumentService(BaseService):
         Format: (Prefix Enum)-(4 huruf nama doc)-ISODATETIME
         Contoh: INV-SERT-20260302T113000
         """
-        # 1. Ambil 3 huruf pertama dari Key Enum (Contoh: INVOICE -> INV, QUOTATION -> QUO)
-        # Jika PO (2 huruf), dia tetap terambil PO
         type_prefix = doc_type_enum.name[:3].upper()
-
-        # 2. Ambil 4 huruf pertama dari nama dokumen (hapus spasi)
         clean_name = "".join(doc_name.split())
-        name_snippet = clean_name[:4].upper().ljust(4, 'X') # ljust: tambah X jika nama kurang dari 4 huruf
-
-        # 3. Timestamp format ISO rapat (Tanpa timezone object untuk menghindari error Windows)
+        name_snippet = clean_name[:4].upper().ljust(4, 'X')
         timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
-
         return f"{type_prefix}-{name_snippet}-{timestamp}"
 
     def create(self, data):
@@ -35,14 +28,11 @@ class DocumentService(BaseService):
             doc_type_raw = data.get('document_type')
             doc_name = data.get('name', 'DOC')
 
-            # 1. Konversi input string ke Enum Object
             if doc_type_raw and isinstance(doc_type_raw, str):
                 try:
-                    # Mencari berdasarkan Key Enum (Misal input "INVOICE")
                     enum_obj = DocumentType[doc_type_raw.upper()]
                     data['document_type'] = enum_obj
                 except KeyError:
-                    # Jika tidak ketemu di Key, coba cari berdasarkan Value (Misal input "Invoice")
                     found = False
                     for member in DocumentType:
                         if member.value.lower() == doc_type_raw.lower():
@@ -52,14 +42,10 @@ class DocumentService(BaseService):
                     if not found:
                         return response(400, f"Invalid document type. Allowed keys: {[e.name for e in DocumentType]}")
 
-            # 2. Generate Number otomatis sebelum simpan
-            # Pastikan kita sudah punya enum object untuk generate number
             current_enum = data.get('document_type', DocumentType.OTHER)
             if not data.get('number'):
                 data['number'] = self.generate_document_number(current_enum, doc_name)
 
-            # 3. Fix Timezone Error & Integer Casting
-            # Gunakan datetime.now() langsung tanpa timezone key 'UTC' agar tidak error di Windows
             now = datetime.now()
             data['created_at'] = now
             data['updated_at'] = now
@@ -71,8 +57,6 @@ class DocumentService(BaseService):
                     except (ValueError, TypeError):
                         data[field] = None
 
-            # 4. Kembalikan Enum ke bentuk string .name sebelum masuk ke super().create
-            # agar sesuai dengan ekspektasi SQLAlchemy SQLEnum
             if isinstance(data.get('document_type'), DocumentType):
                 data['document_type'] = data['document_type'].name
 
@@ -89,7 +73,7 @@ class DocumentService(BaseService):
 
     def get_document_by_id(self, id):
         """Get One dengan Serialisasi"""
-        doc = self._get_by_id(id) 
+        doc = self._get_by_id(id)
         if not doc:
             return response(404, "Document not found", None)
         return response(200, "Success", doc.to_dict())
@@ -136,7 +120,7 @@ class DocumentService(BaseService):
 
             if project_ids:
                 query = query.filter(Document.project_id.in_(project_ids))
-                
+
             if quotation_ids:
                 query = query.filter(Document.quotation_id.in_(quotation_ids))
 
@@ -146,9 +130,9 @@ class DocumentService(BaseService):
             total_items = query.count()
             total_pages = (total_items + page_size - 1) // page_size
             offset = (page_number - 1) * page_size
-            
+
             raw_data = query.offset(offset).limit(page_size).all()
-            
+
             data_list = []
             for doc in raw_data:
                 item = doc.to_dict()
@@ -166,5 +150,6 @@ class DocumentService(BaseService):
                 }
             }
             return response(200, "Success", result)
+
         except Exception as e:
             return response(500, f"Error processing document filter: {str(e)}")

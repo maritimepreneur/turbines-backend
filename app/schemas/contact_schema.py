@@ -45,7 +45,7 @@ class ContactSchema(BaseSchema):
             "name": fields.String(required=True),
             "emails": fields.List(fields.String, required=True),
             "phone_numbers": fields.List(fields.String, required=True),
-            "company": fields.String,
+            "company": fields.String(required=True),
             "role": fields.String(description="Role of the contact", required=False),
             "position": fields.String(description="Position of the contact", required=False),
             "partner_id": fields.Integer(description="Optional Partner ID", required=False, allow_null=True)
