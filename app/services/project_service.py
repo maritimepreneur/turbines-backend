@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, desc, asc
+from datetime import datetime
 from app.models.projects import Project, ProjectType, PaymentType, Stages
 from app.models.contacts import Contact
 from app.models.partners import Partner
@@ -23,9 +24,26 @@ class ProjectService(BaseService):
         validation = self.validate_fk(data)
         if validation: return validation
 
+        try:
+            if 'type' in data: 
+                data['type'] = ProjectType(data['type'])
+            if 'payment_type' in data: 
+                data['payment_type'] = PaymentType(data['payment_type'])
+            if 'current_stages' in data: 
+                data['current_stages'] = Stages(data['current_stages'])
+        except ValueError as e:
+            return response(400, f"Invalid enum value provided. Ensure the exact text matches the options.")
+
+        date_str = datetime.now().strftime("%d%m%y")
+        
+        lead_id = data.get('lead_id')
+        lead_str = str(lead_id) if lead_id else "000"
+        
+        data['code'] = f"MMN-{date_str}-{lead_str}"
+
         existing_code = self.db.query(Project).filter(Project.code == data.get('code')).first()
         if existing_code:
-            return response(400, "Project code already exists")
+            return response(400, f"Project code {data['code']} already exists")
             
         return super().create(data)
     
@@ -45,6 +63,16 @@ class ProjectService(BaseService):
         validation = self.validate_fk(data)
         if validation: return validation
 
+        try:
+            if 'type' in data: 
+                data['type'] = ProjectType(data['type'])
+            if 'payment_type' in data: 
+                data['payment_type'] = PaymentType(data['payment_type'])
+            if 'current_stages' in data: 
+                data['current_stages'] = Stages(data['current_stages'])
+        except ValueError as e:
+            return response(400, f"Invalid enum value provided. Ensure the exact text matches the options.")
+
         if 'code' in data and data['code'] != project.code:
             existing = self.db.query(Project).filter(Project.code == data['code']).first()
             if existing:
@@ -53,7 +81,7 @@ class ProjectService(BaseService):
         return super().update(project_id, data)
     
     def validate_fk(self, data):
-        """ Validation logic for Foreign Keys and Enums """
+        """ Validation logic for Foreign Keys """
         if data.get("contact_id") and not self.db.get(Contact, data["contact_id"]):
             return response(404, "Invalid contact_id")
         
@@ -96,9 +124,17 @@ class ProjectService(BaseService):
                 )
 
             if project_type:
-                query = query.filter(Project.type == project_type)
+                try:
+                    query = query.filter(Project.type == ProjectType(project_type))
+                except ValueError:
+                    pass
+                    
             if current_stage:
-                query = query.filter(Project.current_stages == current_stage)
+                try:
+                    query = query.filter(Project.current_stages == Stages(current_stage))
+                except ValueError:
+                    pass
+            # ---------------------------
             
             if start_date and end_date:
                 query = query.filter(Project.start_date.between(start_date, end_date))
