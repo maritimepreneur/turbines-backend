@@ -52,7 +52,7 @@ class ApprovalSchema(BaseSchema):
         return namespace.model("ApprovalUpdateRequest", {
             "type": fields.String(
                 required=True,
-                enum=["Pending", "Approved", "Rejected"],
+                enum=["PENDING", "APPROVED", "REJECTED"],
                 description="Update approval status"
             )
         }, ordered=True)
