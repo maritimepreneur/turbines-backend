@@ -15,7 +15,7 @@ document_filter_response = DocumentSchema.filter_response_schema(document_ns)
 
 @document_ns.route("/")
 class DocumentList(Resource):
-    
+
     @jwt_required()
     @role_required("ADMIN", "HR", "BISDEV")
     @document_ns.doc(security="Bearer Auth")
@@ -35,7 +35,7 @@ class DocumentList(Resource):
 
 @document_ns.route("/create")
 class DocumentCreate(Resource):
-    
+
     @jwt_required()
     @role_required("ADMIN", "BISDEV")
     @document_ns.doc(security="Bearer Auth")
@@ -47,11 +47,11 @@ class DocumentCreate(Resource):
 
 @document_ns.route("/<int:id>")
 class DocumentDetail(Resource):
-    
+
     @jwt_required()
     @role_required("ADMIN", "HR", "BISDEV")
     @document_ns.doc(security="Bearer Auth")
-    @document_ns.marshal_with(document_response_schema)
+    @document_ns.response(200, "Success", document_response_schema)
     def get(self, id):
         """ Ambil detail dokumen berdasarkan ID """
         return document_svc.get_document_by_id(id)
