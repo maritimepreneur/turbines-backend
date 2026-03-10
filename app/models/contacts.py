@@ -15,8 +15,8 @@ class Contact(db.Model, Meta):
     phone_numbers = Column(JSONB, nullable=False, default=list, server_default="[]")
     company = Column(String, nullable=False)
     agreement_id = Column(Integer, ForeignKey("agreements.id"))
-    role = Column(String, nullable=True)  # Kolom baru untuk role
-    position = Column(String, nullable=True)  # Kolom baru untuk position
+    role = Column(String, nullable=True)  
+    position = Column(String, nullable=True)  
 
     partner_id = Column(
         Integer,
