@@ -201,7 +201,7 @@ class ApprovalService:
             raise ValueError("type is required")
 
         try:
-            approval.type = ApprovalType(data["type"])
+            approval.type = ApprovalType(data["type"].upper())
         except ValueError:
             raise ValueError("Invalid approval status")
 

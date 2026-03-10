@@ -98,6 +98,40 @@ class AuthService(BaseService):
             
         except Exception as e:
             return response(500, str(e))
+        
+    def update_password(self, user_id: int, data: Dict[str, Any]):
+
+        try:
+            current_password = data.get("current_password")
+            new_password = data.get("new_password")
+            confirm_password = data.get("confirm_password")
+
+            if not all([current_password, new_password, confirm_password]):
+                return response(400, "All fields are required")
+
+            if new_password != confirm_password:
+                return response(400, "New password and confirm password do not match")
+            
+            if len(new_password) < 8:
+                return response(400, "New password must be at least 8 characters long")
+
+            user = self.db.query(User).get(user_id)
+
+            if not user:
+                return response(404, "User not found")
+
+            if not user.check_password(current_password):
+                return response(401, "Current password is incorrect")
+            
+            user.set_password(new_password)
+
+            self.db.commit()
+
+            return response(200, "Password updated successfully")
+
+        except Exception as e:
+            self.db.rollback()
+            return response(500, str(e))
     
     def refresh_token(self, user_id: str, claims: Dict[str, Any]):
         """ Refresh access token """
