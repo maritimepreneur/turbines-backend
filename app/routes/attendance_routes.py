@@ -42,7 +42,7 @@ class AbsentList(Resource):
 @attendance_ns.route("/clock-in")
 class ClockIn(Resource):
     @jwt_required()
-    @role_required("ADMIN", "HR", "USER")
+    @role_required("ADMIN", "HR", "USER", "BIZDEV")
     @attendance_ns.doc(security="Bearer Auth")
     @attendance_ns.expect(clock_in_schema)
     @attendance_ns.marshal_with(attendance_response_schema)
@@ -53,7 +53,7 @@ class ClockIn(Resource):
 @attendance_ns.route("/clock-out")
 class ClockOut(Resource):
     @jwt_required()
-    @role_required("ADMIN", "HR", "USER")
+    @role_required("ADMIN", "HR", "USER", "BIZDEV")
     @attendance_ns.doc(security="Bearer Auth")
     @attendance_ns.expect(clock_out_schema)
     @attendance_ns.marshal_with(attendance_response_schema)
@@ -65,7 +65,7 @@ class ClockOut(Resource):
 @attendance_ns.route("/status")
 class TodayStatus(Resource):
     @jwt_required()
-    @role_required("ADMIN", "HR", "USER")
+    @role_required("ADMIN", "HR", "USER", "BIZDEV")
     @attendance_ns.doc(security="Bearer Auth")
     @attendance_ns.marshal_with(today_status_schema)
     def get(self):
