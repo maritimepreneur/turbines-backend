@@ -12,7 +12,7 @@ git clone <repository-url>
 cd flask-project 
 ```
 
-### 2. Buat Virtual Environment
+### 2. Buat Virtual Environment 
 
 ```bash
 python3 -m venv venv

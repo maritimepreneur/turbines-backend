@@ -19,6 +19,14 @@ class AuthSchema(BaseSchema):
             "identifier": fields.String(required=True, example="testuser", description="Username or Email"),
             "password": fields.String(required=True, example="password123", description="Password")
         })
+
+    @classmethod
+    def update_password_schema(cls, namespace: Model):
+        return namespace.model("UpdatePasswordRequest", {
+            "current_password": fields.String(required=True, description="Current password"),
+            "new_password": fields.String(required=True, description="New password"),
+            "confirm_password": fields.String(required=True, description="Confirm new password"),
+        })
     
     @classmethod
     def user_response_schema(cls, namespace: Model):

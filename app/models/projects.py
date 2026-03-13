@@ -2,6 +2,7 @@ from app.database import db
 from enum import Enum
 from sqlalchemy import Column, Integer, String, Text, Date, ForeignKey, Enum as SQLEnum, UniqueConstraint
 from sqlalchemy.orm import relationship
+from app.models.meta.meta import Meta
 
 class ProjectType(Enum):
     OTHER = "Other"
@@ -21,7 +22,7 @@ class Stages(Enum):
     MONITORING = "Monitoring"
     CLOSING = "Closing"
 
-class Project(db.Model):
+class Project(db.Model, Meta):
     __tablename__ = "projects"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -96,5 +97,11 @@ class Project(db.Model):
             "contact_id": self.contact_id,
             "partner_id": self.partner_id,
             "invoice_id": self.invoice_id,
-            "lead_id": self.lead_id
+            "lead_id": self.lead_id,
+            "meta": {
+                "created_at": self.created_at.isoformat() if self.created_at else None,
+                "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+                "created_by": self.created_by,
+                "updated_by": self.updated_by
+            }
         }

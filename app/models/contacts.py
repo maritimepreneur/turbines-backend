@@ -17,7 +17,12 @@ class Contact(db.Model, Meta):
     agreement_id = Column(Integer, ForeignKey("agreements.id"))
     nasionality = Column(String, nullable=True)
     role = Column(String, nullable=True)
-    position = Column(String, nullable=True)
+
+    partner_id = Column(
+        Integer,
+        ForeignKey("partners.id"),
+        nullable=True
+    )
 
     __table_args__ = (
         UniqueConstraint("emails", name="uq_contact_emails"),

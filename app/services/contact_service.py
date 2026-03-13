@@ -1,5 +1,7 @@
-from sqlalchemy.orm import Session, joinedload  # ← tambah joinedload
+import json
+from sqlalchemy.orm import Session, joinedload 
 from sqlalchemy import or_, desc, asc, cast, String
+from sqlalchemy.dialects.postgresql import JSONB
 from app.models.contacts import Contact
 from app.services.base_service import BaseService
 from app.utils import response
@@ -12,12 +14,7 @@ class ContactService(BaseService):
 
     def get_all_contacts(self):
         """ Get All Contact """
-        contacts = (
-            self.db.query(Contact).options(
-                joinedload(Contact.contact_partners)
-                .joinedload(ContactPartner.partner)
-            ).all()
-        )
+        contacts = self.db.query(Contact).options(joinedload(Contact.partner)).all()
         return response(200, "Success", contacts)
 
     def create(self, contact_data):
@@ -33,7 +30,25 @@ class ContactService(BaseService):
 
         emails = contact_data.get("emails")
         phones = contact_data.get("phone_numbers")
+        company = contact_data.get("company")
 
+        if not company:
+            return response(400, "company is required")
+
+        if not isinstance(emails, list) or not isinstance(phones, list):
+            return response(400, "emails and phone_numbers must be list")
+
+        email_conditions = [Contact.emails.contains([e]) for e in emails]
+        phone_conditions = [Contact.phone_numbers.contains([p]) for p in phones]
+
+        existing = self.db.query(Contact).filter(
+            or_(*email_conditions, *phone_conditions)
+        ).first()
+
+        if existing:
+            return response(409, "Contact with the same email or phone number already exists")
+
+<<<<<<< HEAD
         if not isinstance(emails, list) or not isinstance(phones, list):
             return response(400, "emails and phone_numbers must be list")
         
@@ -63,6 +78,22 @@ class ContactService(BaseService):
             .first()
         )
 
+=======
+        if partner_id in (0, "0"):
+            partner_id = None
+            contact_data["partner_id"] = None
+
+        if partner_id is not None:
+            partner = self.db.get(Partner, partner_id)
+            if not partner:
+                return response(404, "Partner not found")
+
+        return super().create(contact_data)
+
+    def get_contact_by_id(self, contact_id):
+        """ Get Contact details """
+        contact = self.db.query(Contact).options(joinedload(Contact.partner)).filter(Contact.id == contact_id).first()
+>>>>>>> 64a35dc1e8d12c7ffb558ab2a58e46e0d5baff2c
         if not contact:
             return response(404, "Contact not found")
         return response(200, "Success", contact)
@@ -99,7 +130,11 @@ class ContactService(BaseService):
             start_date = payload.get('start_date')
             end_date = payload.get('end_date')
 
+<<<<<<< HEAD
             query = self.db.query(Contact).options(joinedload(Contact.contact_partners))  # ← update
+=======
+            query = self.db.query(Contact).options(joinedload(Contact.partner))
+>>>>>>> 64a35dc1e8d12c7ffb558ab2a58e46e0d5baff2c
 
             if search_query:
                 query = query.filter(
@@ -111,7 +146,6 @@ class ContactService(BaseService):
 
             if start_date and end_date:
                 query = query.filter(Contact.created_at.between(start_date, end_date))
-
             else:
                 if names_filter:
                     conditions = [Contact.name.ilike(f"%{n}%") for n in names_filter if n]
@@ -124,10 +158,12 @@ class ContactService(BaseService):
                         query = query.filter(or_(*conditions))
 
                 if emails_filter:
-                    query = query.filter(Contact.emails.op('?|')(emails_filter))
+                    email_conditions = [Contact.emails.contains([e]) for e in emails_filter]
+                    query = query.filter(or_(*email_conditions))
 
                 if phones_filter:
-                    query = query.filter(Contact.phone_numbers.op('?|')(phones_filter))
+                    phone_conditions = [Contact.phone_numbers.contains([p]) for p in phones_filter]
+                    query = query.filter(or_(*phone_conditions))
 
             if hasattr(Contact, sort_by):
                 sort_column = getattr(Contact, sort_by)
@@ -144,7 +180,6 @@ class ContactService(BaseService):
             offset = (page_number - 1) * page_size
 
             raw_data = query.offset(offset).limit(page_size).all()
-
             data = [contact.to_dict() for contact in raw_data]
 
             result = {

@@ -17,3 +17,6 @@ from .schedule_routes import schedule_ns
 from .approval_routes import approval_ns
 from .agreement_routes import agreement_ns
 from .specialization_routes import specialization_ns
+from .scholarship_routes import scholarship_ns
+from .project_routes import project_ns
+from .gform_routes import gform_ns
