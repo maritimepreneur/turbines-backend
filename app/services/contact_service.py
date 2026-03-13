@@ -48,37 +48,6 @@ class ContactService(BaseService):
         if existing:
             return response(409, "Contact with the same email or phone number already exists")
 
-<<<<<<< HEAD
-        if not isinstance(emails, list) or not isinstance(phones, list):
-            return response(400, "emails and phone_numbers must be list")
-        
-        result_body, _ = super().create(contact_data)
-        contact = result_body["data"]
-
-        for pid in partner_ids:
-            cp = ContactPartner(
-                contact_id = contact.id,
-                partner_id = pid
-            )
-            self.db.add(cp)
-        
-        self.db.commit()
-        self.db.refresh(contact)
-
-        return response(201, "Action Success", contact)
-
-    def get_contact_by_id(self, contact_id):
-        """ Get Contact details """
-        contact = (
-            self.db.query(Contact).options(
-                joinedload(Contact.contact_partners)
-                .joinedload(ContactPartner.partner)
-            )
-            .filter(Contact.id == contact_id)
-            .first()
-        )
-
-=======
         if partner_id in (0, "0"):
             partner_id = None
             contact_data["partner_id"] = None
@@ -93,7 +62,6 @@ class ContactService(BaseService):
     def get_contact_by_id(self, contact_id):
         """ Get Contact details """
         contact = self.db.query(Contact).options(joinedload(Contact.partner)).filter(Contact.id == contact_id).first()
->>>>>>> 64a35dc1e8d12c7ffb558ab2a58e46e0d5baff2c
         if not contact:
             return response(404, "Contact not found")
         return response(200, "Success", contact)
@@ -130,11 +98,7 @@ class ContactService(BaseService):
             start_date = payload.get('start_date')
             end_date = payload.get('end_date')
 
-<<<<<<< HEAD
-            query = self.db.query(Contact).options(joinedload(Contact.contact_partners))  # ← update
-=======
             query = self.db.query(Contact).options(joinedload(Contact.partner))
->>>>>>> 64a35dc1e8d12c7ffb558ab2a58e46e0d5baff2c
 
             if search_query:
                 query = query.filter(
