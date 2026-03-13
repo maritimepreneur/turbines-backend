@@ -84,7 +84,7 @@ class Employee(db.Model, Meta):
     user = relationship("User", back_populates="employee")
     schedules = relationship("Schedule", back_populates="employee", cascade="all, delete-orphan")
     attendances = relationship("Attendance", back_populates="employee", cascade="all, delete-orphan")
-    employement = relationship("Employment", back_populates="employee", uselist=False, cascade="all, delete-orphan")
+    employment = relationship("Employment", back_populates="employee", uselist=False, cascade="all, delete-orphan")
 
     def to_dict(self):
         """Helper untuk mengubah Object Employee ke Dictionary agar JSON Serializable"""

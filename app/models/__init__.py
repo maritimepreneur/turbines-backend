@@ -27,5 +27,5 @@ from .registration import Registration, TraningCourseLevel, RegistrationPaymentS
 from .scholarship import Scholarship, ScholarshipStatus
 from .specialization import Specialization
 from .contact_partners import ContactPartner
-from .employement import JobType, Empolyement
+from .employment import JobType, Employment
 from .format_emails import FormatEmail
