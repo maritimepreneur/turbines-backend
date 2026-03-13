@@ -49,7 +49,7 @@ class Contact(db.Model, Meta):
             "phone_numbers": self.phone_numbers,
             "company": self.company,
             "role": self.role,
-            "position": self.position,
+            "position": getattr(self, "position", None),
             "partners": [p.to_dict() for p in self.partners] if self.partners else [],
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,

@@ -10,8 +10,8 @@ class JobType(Enum):
     PARTTIME = "Part-time"
     EXECUTIVE = "Executive"
 
-class Empolyement(db.Model, Meta):
-    __tablename__ = "employements"
+class Employment(db.Model, Meta):
+    __tablename__ = "employments"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
 
@@ -21,7 +21,7 @@ class Empolyement(db.Model, Meta):
     division = Column(String, nullable=False)
     job_title = Column(String, nullable=False)
     job_position = Column(
-        SQLEnum(JobType, name="employement_job_type"),
+        SQLEnum(JobType, name="employment_job_type"),
         nullable=False
     )
     employee_type = Column(Boolean, nullable=False)
@@ -34,7 +34,7 @@ class Empolyement(db.Model, Meta):
         unique=True
     )
 
-    employee = relationship("Employee", back_populates="employement")
+    employee = relationship("Employee", back_populates="employment")
 
 
     def to_dict(self):
