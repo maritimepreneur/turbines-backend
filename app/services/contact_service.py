@@ -6,6 +6,7 @@ from app.models.contacts import Contact
 from app.services.base_service import BaseService
 from app.utils import response
 from app.models.partners import Partner
+from app.models.contact_partners import ContactPartner
 
 class ContactService(BaseService):
     def __init__(self, db: Session):
@@ -18,7 +19,15 @@ class ContactService(BaseService):
 
     def create(self, contact_data):
         """ Register a new contact """
-        partner_id = contact_data.get("partner_id")
+        partner_ids = contact_data.pop("partner_ids", [])
+
+        if partner_ids is None:
+            partner_ids = []
+        elif isinstance(partner_ids, int):
+            partner_ids = [partner_ids]
+        elif not isinstance(partner_ids, list):
+            return response(400, "Partner ids must be integer or list of integers")
+
         emails = contact_data.get("emails")
         phones = contact_data.get("phone_numbers")
         company = contact_data.get("company")

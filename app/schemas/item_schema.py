@@ -49,6 +49,7 @@ class ItemsSchema(BaseSchema):
             "billed_amount": fields.Float,
             "type": fields.String,
             "amount_type": fields.String,
+            "code": fields.String,
             "expense_id": fields.Integer,
             "quotation_id": fields.Integer,
             "meta": fields.Nested(namespace.model("Meta", {

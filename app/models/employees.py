@@ -66,6 +66,8 @@ class Employee(db.Model, Meta):
     img_url = Column(String, nullable=False)
     signature_img_url = Column(String, nullable=False)
     signature_scale = Column(Float, nullable=False)
+    division = Column(String, nullable=False)
+    role = Column(String, nullable=False)
 
     user_id = Column(
         Integer,
@@ -82,6 +84,7 @@ class Employee(db.Model, Meta):
     user = relationship("User", back_populates="employee")
     schedules = relationship("Schedule", back_populates="employee", cascade="all, delete-orphan")
     attendances = relationship("Attendance", back_populates="employee", cascade="all, delete-orphan")
+    employement = relationship("Employment", back_populates="employee", uselist=False, cascade="all, delete-orphan")
 
     def to_dict(self):
         """Helper untuk mengubah Object Employee ke Dictionary agar JSON Serializable"""
@@ -108,6 +111,8 @@ class Employee(db.Model, Meta):
             "img_url": self.img_url,
             "signature_img_url": self.signature_img_url,
             "signature_scale": self.signature_scale,
+            "divison": self.division,
+            "role": self.role,
             "user_id": self.user_id,
             "meta": {
                 "created_at": self.created_at.isoformat() if self.created_at else None,

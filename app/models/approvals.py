@@ -7,6 +7,7 @@ class ApprovalType(Enum):
     PENDING = "Pending"
     APPROVED = "Approved"
     REJECTED = "Rejected"
+    LEAVE = "Leave"
 
 class Approval(db.Model):
     __tablename__ = "approvals"
