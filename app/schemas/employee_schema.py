@@ -30,6 +30,8 @@ class EmployeeSchema(BaseSchema):
                 "img_url": fields.String,
                 "signature_img_url": fields.String,
                 "signature_scale": fields.Float,
+                "division": fields.String,
+                "role": fields.String,
                 "user_id": fields.Integer,
                 "meta": fields.Nested(namespace.model("Meta", {
                     "created_at": fields.String(description="ISO 8601 Date"),
@@ -65,6 +67,8 @@ class EmployeeSchema(BaseSchema):
             "img_url": fields.String,
             "signature_img_url": fields.String,
             "signature_scale": fields.Float(default=1.0),
+            "division": fields.String(required=True),
+            "role": fields.String(required=True)
         })
 
     @classmethod

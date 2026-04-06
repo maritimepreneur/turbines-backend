@@ -4,6 +4,18 @@ from app.schemas.base_schema import BaseSchema
 class QuotationSchema(BaseSchema):
     @classmethod
     def get_schema(cls, namespace: Model):
+        item_model = namespace.model("QuotationItem", {
+            "id": fields.Integer,
+            "name": fields.String,
+            "cost": fields.Float,
+            "amount": fields.Float,
+            "billed_amount": fields.Float,
+            "type": fields.String,
+            "amount_type": fields.String,
+            "code": fields.String,
+            "attachments": fields.Raw,
+        })
+
         return namespace.model("QuotationResponse", {
             **BaseSchema.get_schema(namespace),
             "data": fields.Nested(namespace.model("Quotation", {
@@ -32,6 +44,7 @@ class QuotationSchema(BaseSchema):
                     "period": fields.String,
                     "current_stages": fields.String,
                 })),
+                "item": fields.List(fields.Nested(item_model), attribute="items"),
                 "meta": fields.Nested(namespace.model("Meta", {
                     "created_at": fields.String(description="ISO 8601 Date"),
                     "updated_at": fields.String(description="ISO 8601 Date"),
