@@ -39,11 +39,11 @@ class FormData(db.Model, Meta):
         return {
             "id": self.id,
             "batch_number": self.batch_number,
-            "timestamp": self.timestamp,
+            "timestamp": self.timestamp.isoformat() if self.timestamp else None,
             "nama_lengkap": self.nama_lengkap,
             "nomor_whatsapp": self.nomor_whatsapp,
             "tempat_lahir": self.tempat_lahir,
-            "jenis_kelamin": self.jenis_kelamin.value if self.jenis_kelamin else None,
+            "jenis_kelamin": self.jenis_kelamin,
             "alamat_ktp": self.alamat_ktp,
             "domisili": self.domisili,
             "pendaftaran": self.pendaftaran,
@@ -52,7 +52,7 @@ class FormData(db.Model, Meta):
             "instansi_pendidikan_akhir": self.instansi_pendidikan_akhir,
             "link_cv": self.link_cv,
             "is_email_sent": self.is_email_sent,
-            "interview_datetime": self.interview_datetime,
+            "interview_datetime": self.interview_datetime.isoformat() if self.interview_datetime else None,
             "status": self.status,
             "selection_status": self.selection_status.value if self.selection_status else None,
             "meta": {

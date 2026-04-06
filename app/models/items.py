@@ -52,6 +52,7 @@ class Item(db.Model, Meta):
             "billed_amount": float(self.billed_amount),
             "type": self.type.value if self.type else None,
             "amount_type": self.amount_type,
+            "code": self.code,
             "attachments": self.attachments,
             "meta": {
                 "created_at": self.created_at.isoformat() if self.created_at else None,

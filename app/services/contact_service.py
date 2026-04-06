@@ -6,6 +6,7 @@ from app.models.contacts import Contact
 from app.services.base_service import BaseService
 from app.utils import response
 from app.models.partners import Partner
+from app.models.contact_partners import ContactPartner
 
 class ContactService(BaseService):
     def __init__(self, db: Session):
@@ -13,12 +14,38 @@ class ContactService(BaseService):
 
     def get_all_contacts(self):
         """ Get All Contact """
-        contacts = self.db.query(Contact).options(joinedload(Contact.partner)).all()
+        contacts = (
+            self.db.query(Contact)
+            .options(joinedload(Contact.contact_partners).joinedload(ContactPartner.partner))
+            .all()
+        )
         return response(200, "Success", contacts)
 
     def create(self, contact_data):
         """ Register a new contact """
-        partner_id = contact_data.get("partner_id")
+        partner_ids = contact_data.pop("partner_ids", [])
+        legacy_partner_id = contact_data.pop("partner_id", None)
+        if legacy_partner_id not in (None, 0, "0"):
+            partner_ids = [*partner_ids, legacy_partner_id] if isinstance(partner_ids, list) else [partner_ids, legacy_partner_id]
+
+        if partner_ids is None:
+            partner_ids = []
+        elif isinstance(partner_ids, int):
+            partner_ids = [partner_ids]
+        elif not isinstance(partner_ids, list):
+            return response(400, "Partner ids must be integer or list of integers")
+
+        normalized_partner_ids = []
+        for partner_id in partner_ids:
+            if partner_id in (None, 0, "0"):
+                continue
+            try:
+                parsed_partner_id = int(partner_id)
+            except (TypeError, ValueError):
+                return response(400, "Each partner id must be an integer")
+            if parsed_partner_id not in normalized_partner_ids:
+                normalized_partner_ids.append(parsed_partner_id)
+
         emails = contact_data.get("emails")
         phones = contact_data.get("phone_numbers")
         company = contact_data.get("company")
@@ -39,20 +66,44 @@ class ContactService(BaseService):
         if existing:
             return response(409, "Contact with the same email or phone number already exists")
 
-        if partner_id in (0, "0"):
-            partner_id = None
-            contact_data["partner_id"] = None
+        if normalized_partner_ids:
+            existing_partner_ids = {
+                row[0]
+                for row in self.db.query(Partner.id).filter(Partner.id.in_(normalized_partner_ids)).all()
+            }
+            missing_partner_ids = sorted(set(normalized_partner_ids) - existing_partner_ids)
+            if missing_partner_ids:
+                return response(404, f"Partner not found: {missing_partner_ids}")
 
-        if partner_id is not None:
-            partner = self.db.get(Partner, partner_id)
-            if not partner:
-                return response(404, "Partner not found")
+        contact_data["partner_id"] = normalized_partner_ids[0] if normalized_partner_ids else None
 
-        return super().create(contact_data)
+        data = self._inject_create_meta(contact_data)
+        new_contact = Contact(**data)
+        self.db.add(new_contact)
+        self.db.flush()
+
+        for partner_id in normalized_partner_ids:
+            self.db.add(
+                ContactPartner(
+                    contact_id=new_contact.id,
+                    partner_id=partner_id,
+                    created_by=data.get("created_by"),
+                    updated_by=data.get("updated_by"),
+                )
+            )
+
+        self.db.commit()
+        self.db.refresh(new_contact)
+        return response(201, "Action Success", new_contact)
 
     def get_contact_by_id(self, contact_id):
         """ Get Contact details """
-        contact = self.db.query(Contact).options(joinedload(Contact.partner)).filter(Contact.id == contact_id).first()
+        contact = (
+            self.db.query(Contact)
+            .options(joinedload(Contact.contact_partners).joinedload(ContactPartner.partner))
+            .filter(Contact.id == contact_id)
+            .first()
+        )
         if not contact:
             return response(404, "Contact not found")
         return response(200, "Success", contact)
@@ -89,7 +140,10 @@ class ContactService(BaseService):
             start_date = payload.get('start_date')
             end_date = payload.get('end_date')
 
-            query = self.db.query(Contact).options(joinedload(Contact.partner))
+            query = (
+                self.db.query(Contact)
+                .options(joinedload(Contact.contact_partners).joinedload(ContactPartner.partner))
+            )
 
             if search_query:
                 query = query.filter(

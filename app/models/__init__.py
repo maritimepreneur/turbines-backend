@@ -26,3 +26,6 @@ from .gform import Gform, GformType
 from .registration import Registration, TraningCourseLevel, RegistrationPaymentStatus, RegistrationPaymentType
 from .scholarship import Scholarship, ScholarshipStatus
 from .specialization import Specialization
+from .contact_partners import ContactPartner
+from .employment import JobType, Employment
+from .format_emails import FormatEmail

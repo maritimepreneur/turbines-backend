@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_, desc, asc
 from app.models.partners import Partner, CompanyType, PartnerType
 from app.models.contacts import Contact
+from app.models.contact_partners import ContactPartner
 from app.services.base_service import BaseService
 from app.utils import response
 
@@ -38,9 +39,13 @@ class PartnerService(BaseService):
         if not partner:
             return response(404, "Partner not found")
 
-        contacts = self.db.query(Contact).filter(Contact.partner_id == partner_id).all()
-        data = [contact.to_dict() for contact in contacts]
-        return response(200, "Success", data)
+        contacts = (
+            self.db.query(Contact)
+            .join(ContactPartner)
+            .filter(ContactPartner.partner_id == partner_id)
+            .all()
+        )
+        return response(200, "Success", contacts)
 
     def get_partner_list_filter(self, payload):
         try:

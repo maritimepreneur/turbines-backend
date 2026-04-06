@@ -40,7 +40,6 @@ class Partner(db.Model, Meta):
     service = Column(JSONB, nullable=True, default=list, server_default="[]")
     goods = Column(JSONB, nullable=True, default=list, server_default="[]")
 
-    contacts = relationship("Contact", back_populates="partner")
     leads = relationship("Lead", back_populates="partner")
     projects = relationship("Project", back_populates="partner")
     quotations = relationship("Quotation", back_populates="partner")
@@ -48,6 +47,8 @@ class Partner(db.Model, Meta):
     invoices = relationship("Invoice", back_populates="partner")
     requirements = relationship("Requirement", back_populates="partners")
     agreement_partners = relationship("AgreementPartner", back_populates="partner")
+    contact_partners = relationship("ContactPartner", back_populates="partner")
+    contacts = relationship("Contact", secondary="contact_partners", viewonly=True)
 
     def to_dict(self):
         """ Helper untuk mengubah object SQLAlchemy menjadi Dictionary """
