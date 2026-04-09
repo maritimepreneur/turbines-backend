@@ -34,7 +34,7 @@ class Quotation(db.Model, Meta):
     partner = relationship("Partner", back_populates="quotations")
     purchase_orders = relationship("Purchase_Order", back_populates="quotation")
     approvals = relationship("Approval", back_populates="quotations")
-    items = relationship("Item", back_populates="quotation")
+    items = relationship("Item", back_populates="quotation", cascade="all, delete-orphan")
     documents = relationship("Document", back_populates="quotation")
 
     def to_dict(self):

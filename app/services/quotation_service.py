@@ -1,11 +1,57 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_, desc, asc
 from app.models.quotations import Quotation
 from app.models.contacts import Contact
 from app.models.partners import Partner
+from app.models.expenses import Expense
+from app.models.approvals import Approval, ApprovalType
 from app.models.leads import Lead
+from app.models.items import Item
 from app.services.base_service import BaseService
 from app.utils import response
+from datetime import datetime, date
+
+def generate_date_prefix():
+    return datetime.now().strftime("%d%m%y")
+
+def generate_running_number(db, model, prefix_field="code", date_prefix=None):
+    last = (
+        db.query(model)
+        .filter(model.code.like(f"%{date_prefix}%"))
+        .order_by(model.id.desc())
+        .first()
+    )
+
+    if not last:
+        return "000001"
+
+    last_code = last.code
+    last_number = int(last_code[-6:])
+    return str(last_number + 1).zfill(6)
+    
+def generate_expense_code(db):
+    date_prefix = generate_date_prefix()
+    running = generate_running_number(db, Expense, date_prefix=date_prefix)
+
+    return f"EXP-{date_prefix}{running}"
+
+def generate_approval_code(db, jenis="QUO", dari="FIN", ke="BD"):
+    date_prefix = generate_date_prefix()
+    running = generate_running_number(db, Approval, date_prefix=date_prefix)
+
+    return f"{jenis}-{dari}-{ke}-{date_prefix}{running}"
+
+def generate_item_code(name: str, item_type: str, expense_id: int):
+    prefix = name[:3].upper().ljust(3, "X")
+
+    type_map = {
+        "Service": "SVC",
+        "Goods": "GDS"
+    }
+
+    type_code = type_map.get(item_type, "UNK")
+
+    return f"{prefix}-{type_code}-{expense_id}"
 
 class QuotationService(BaseService):
     def __init__(self, db: Session):
@@ -17,24 +63,171 @@ class QuotationService(BaseService):
         return response(200, "Success", quotations or [])
     
     def create_quotation(self, quotation_data):
-        """ Create a new quotation """
-        self.validate_fk(quotation_data)
-        return super().create(quotation_data)
+        items_data = quotation_data.pop("items", [])
+
+        try:
+            with self.db.begin():
+
+                quotation = Quotation(**quotation_data)
+
+                for item_data in items_data:
+
+                    # Expense
+                    expense = Expense(
+                        period_date=date.today(),
+                        code=generate_expense_code(self.db),
+                        total_amount=item_data["cost"],
+                        notes=item_data.get("name")
+                    )
+
+                    # Approval
+                    approval = Approval(
+                        type=ApprovalType.PENDING,
+                        code=generate_approval_code(self.db)
+                    )
+
+                    expense.approval = approval
+
+                    self.db.add(expense)
+                    self.db.flush()
+
+                    # Item
+                    item = Item(
+                        **item_data,
+                        expense=expense
+                    )
+
+                    # generate item code setelah expense ada
+                    item.code = generate_item_code(
+                        item.name,
+                        item.type.value if hasattr(item.type, "value") else item.type,
+                        expense.id if expense.id else 0
+                    )
+
+                    quotation.items.append(item)
+
+                self.db.add(quotation)
+
+            return response(201, "Created", quotation)
+
+        except Exception as e:
+            return response(500, str(e))
     
     def get_quotation_by_id(self, quotation_id):
-        """ Get Quotation details """
-        quotation = self._get_by_id(quotation_id)
+        quotation = (
+            self.db.query(Quotation)
+            .options(
+                joinedload(Quotation.items)
+                .joinedload(Item.expense)
+                .joinedload(Expense.approval)
+            )
+            .filter(Quotation.id == quotation_id)
+            .first()
+        )
+
         if not quotation:
-            return response(404, "Quotation not found", None)
-        return super().get_by_id(quotation_id)
+            return response(404, "Quotation not found")
+
+        return response(200, "Success", quotation)
     
     def update_quotation_by_id(self, quotation_id, updated_data):
-        """ Update Quotation """
-        quotation = self._get_by_id(quotation_id)
-        self.validate_fk(updated_data)
+        quotation = (
+            self.db.query(Quotation)
+            .options(
+                joinedload(Quotation.items)
+                .joinedload(Item.expense)
+                .joinedload(Expense.approval)
+            )
+            .filter(Quotation.id == quotation_id)
+            .first()
+        )
+
         if not quotation:
-            return response(404, f"Quotation ID {quotation_id} not found")
-        return super().update(quotation_id, updated_data)
+            return response(404, "Quotation not found")
+
+        self.validate_fk(updated_data)
+
+        items_data = updated_data.pop("items", [])
+
+        try:
+            with self.db.begin():
+
+                # update main quotation fields
+                for key, value in updated_data.items():
+                    setattr(quotation, key, value)
+
+                # existing items map
+                existing_items = {item.id: item for item in quotation.items}
+                incoming_ids = []
+
+                for item_data in items_data:
+
+                    # UPDATE EXISTING ITEM
+                    if item_data.get("id"):
+                        item = existing_items.get(item_data["id"])
+                        if not item:
+                            continue
+
+                        item.name = item_data["name"]
+                        item.cost = item_data["cost"]
+                        item.amount = item_data["amount"]
+                        item.billed_amount = item_data["billed_amount"]
+                        item.type = item_data["type"]
+                        item.amount_type = item_data["amount_type"]
+
+                        # update expense
+                        if item.expense:
+                            item.expense.total_amount = item.cost
+                            item.expense.notes = item.name
+
+                            # reset approval kalau perlu
+                            if item.expense.approval:
+                                item.expense.approval.type = ApprovalType.PENDING
+
+                        incoming_ids.append(item.id)
+
+                    # CREATE NEW ITEM
+                    else:
+                        expense = Expense(
+                            period_date=date.today(),
+                            code=generate_expense_code(self.db),
+                            total_amount=item_data["cost"],
+                            notes=item_data.get("name")
+                        )
+
+                        approval = Approval(
+                            type=ApprovalType.PENDING,
+                            code=generate_approval_code(self.db)
+                        )
+
+                        expense.approval = approval
+
+                        self.db.add(expense)
+                        self.db.flush()
+
+                        item = Item(
+                            **item_data,
+                            expense=expense
+                        )
+
+                        item.code = generate_item_code(
+                            item.name,
+                            item.type.value if hasattr(item.type, "value") else item.type,
+                            expense.id
+                        )
+
+                        quotation.items.append(item)
+
+                # DELETE ORPHAN ITEMS
+                for item_id, item in existing_items.items():
+                    if item_id not in incoming_ids:
+                        self.db.delete(item)
+                        # cascade → expense & approval ikut kehapus
+
+            return response(200, "Updated", quotation)
+
+        except Exception as e:
+            return response(500, str(e))
     
     def validate_fk(self, quotation_data):
         """ Existing validation logic """

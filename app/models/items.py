@@ -29,18 +29,13 @@ class Item(db.Model, Meta):
         UniqueConstraint("code", name="uq_item_code"),
     )
 
-    expense_id = Column(
-        Integer,
-        ForeignKey("expenses.id"),
-        nullable=True
-    )
     quotation_id = Column(
         Integer,
         ForeignKey("quotations.id"),
         nullable=True
     )
 
-    expense = relationship("Expense", back_populates="items")
+    expense = relationship("Expense", back_populates="item", cascade="all, delete-orphan", uselist=False)
     quotation = relationship("Quotation", back_populates="items")
 
     def to_dict(self):

@@ -1,6 +1,6 @@
 from app.database import db
 from enum import Enum
-from sqlalchemy import Column, Integer, DATE, String, Numeric, Text, Enum as SQLEnum, UniqueConstraint
+from sqlalchemy import Column, Integer, DATE, String, Numeric, Text, Enum as SQLEnum, UniqueConstraint, ForeignKey
 from sqlalchemy.orm import relationship
 from app.models.meta.meta import Meta
 
@@ -26,12 +26,18 @@ class Expense(db.Model, Meta):
     total_amount = Column(Numeric(14, 2), nullable=False)
     notes = Column(Text, nullable=False)
 
+    item_id = Column(
+        Integer,
+        ForeignKey("items.id"),
+        unique=True
+    )
+
     __table_args__ = (
         UniqueConstraint("code", name="uq_expense_code"),
     )
 
-    items = relationship("Item", back_populates="expense")
-    approvals = relationship("Approval", back_populates="expense")
+    item = relationship("Item", back_populates="expense", uselist=False)
+    approval = relationship("Approval", back_populates="expense", uselist=False, cascade="all, delete-orphan")
 
     def to_dict(self):
         return {

@@ -41,13 +41,13 @@ class Approval(db.Model):
     expense_id = Column(
         Integer,
         ForeignKey("expenses.id"),
-        nullable=True
+        unique=True
     )
 
     quotations = relationship("Quotation", back_populates="approvals")
     purchase_orders = relationship("Purchase_Order", back_populates="approvals")
     invoices = relationship("Invoice", back_populates="approvals")
-    expense = relationship("Expense", back_populates="approvals")
+    expense = relationship("Expense", back_populates="approval", uselist=False)
 
     def to_dict(self):
         return {
