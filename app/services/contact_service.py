@@ -117,17 +117,16 @@ class ContactService(BaseService):
         new_emails = updated_data.get("emails", [])
         new_phones = updated_data.get("phone_numbers", [])
 
-        # Cek duplikat email/phone di contact LAIN (exclude contact ini sendiri)
+        # Cek duplikat di contact LAIN
         if new_emails or new_phones:
             email_conditions = [Contact.emails.contains([e]) for e in new_emails]
             phone_conditions = [Contact.phone_numbers.contains([p]) for p in new_phones]
-
             all_conditions = [c for c in email_conditions + phone_conditions]
             if all_conditions:
                 existing = (
                     self.db.query(Contact)
                     .filter(or_(*all_conditions))
-                    .filter(Contact.id != contact_id)  # exclude diri sendiri
+                    .filter(Contact.id != contact_id)
                     .first()
                 )
                 if existing:
@@ -144,16 +143,13 @@ class ContactService(BaseService):
             contact.role = updated_data["role"]
         if "position" in updated_data:
             contact.position = updated_data["position"]
-
-        # Replace emails & phones (bukan append)
         if new_emails:
             contact.emails = new_emails
         if new_phones:
             contact.phone_numbers = new_phones
 
-        data = self._inject_update_meta({})
-        contact.updated_at = data.get("updated_at")
-        contact.updated_by = data.get("updated_by")
+        # Gunakan get_user_id_login() langsung, bukan _inject_update_meta
+        contact.updated_by = self.get_user_id_login()
 
         self.db.commit()
         self.db.refresh(contact)
