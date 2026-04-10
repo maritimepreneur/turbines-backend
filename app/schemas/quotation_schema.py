@@ -14,7 +14,7 @@ class QuotationSchema(BaseSchema):
             "id": fields.Integer,
             "code": fields.String,
             "total_amount": fields.Float,
-            "status": fields.String(attribute=lambda x: x.status.value if x.status else None),
+            "status": fields.String(attribute=lambda x: x.status.value if x and x.status else None),
 
             # nested approval
             "approval": fields.Nested(approval_model),
