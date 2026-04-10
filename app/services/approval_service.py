@@ -201,7 +201,7 @@ class ApprovalService:
             raise ValueError("type is required")
 
         try:
-            approval.type = ApprovalType(data["type"].upper())
+            approval.type = ApprovalType[data["type"].upper()]
         except ValueError:
             raise ValueError("Invalid approval status")
 
@@ -235,25 +235,28 @@ class ApprovalService:
 
     def extract_lead_id(self, approval):
 
-        if approval.quotations:
-            return approval.quotations.lead_id
+        try:
+            if approval.quotations:
+                return approval.quotations.lead_id
 
-        if approval.purchase_orders and approval.purchase_orders.quotation:
-            return approval.purchase_orders.quotation.lead_id
+            if approval.purchase_orders and approval.purchase_orders.quotation:
+                return approval.purchase_orders.quotation.lead_id
 
-        if (
-            approval.invoices
-            and approval.invoices.purchase_order
-            and approval.invoices.purchase_order.quotation
-        ):
-            return approval.invoices.purchase_order.quotation.lead_id
+            if (
+                approval.invoices
+                and approval.invoices.purchase_order
+                and approval.invoices.purchase_order.quotation
+            ):
+                return approval.invoices.purchase_order.quotation.lead_id
 
-        if (
-            approval.expense
-            and approval.expense.invoice
-            and approval.expense.invoice.purchase_order
-            and approval.expense.invoice.purchase_order.quotation
-        ):
-            return approval.expense.invoice.purchase_order.quotation.lead_id
+            if (
+                approval.expense
+                and approval.expense.item
+                and approval.expense.item.quotation
+            ):
+                return approval.expense.item.quotation.lead_id
+
+        except Exception:
+            return None
 
         return None
