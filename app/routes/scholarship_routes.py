@@ -78,8 +78,8 @@ class ScholarshipUpdate(Resource):
     @jwt_required()
     @role_required("ADMIN", "HR", "OPERATION")
     @scholarship_ns.doc(security="Bearer Auth")
-    @scholarship_ns.expect(scholarship_post_schema)
-    @scholarship_ns.marshal_with(scholarship_detail_schema)
+    @scholarship_ns.expect(ScholarshipSchema.update_schema(scholarship_ns)) 
+    @scholarship_ns.marshal_with(ScholarshipSchema.get_schema(scholarship_ns))
     def put(self, id):
         """Update scholarship"""
         return service.update(id, scholarship_ns.payload)

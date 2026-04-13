@@ -30,11 +30,9 @@ class ApprovalService:
         self.db = db_session
 
     def create(self, data):
-
         entity_type = data.get("entity_type")
         if not entity_type:
             raise ValueError("entity_type is required")
-
         entity_type = entity_type.title().strip()
 
         if entity_type not in self.ENTITY_MAPPING:
@@ -42,33 +40,16 @@ class ApprovalService:
 
         current_user_id = get_jwt_identity()
         current_user = self.db.query(User).get(current_user_id)
-
         if not current_user:
             raise ValueError("User not found")
 
-        raw_from_role = current_user.role.name.upper()
-
-        if raw_from_role not in self.ROLE_MAPPING:
-            raise ValueError("User role not allowed")
-
-        from_dept = self.ROLE_MAPPING[raw_from_role]
-
         entity_keys = ["quotation_id", "po_id", "invoice_id", "expense_id"]
-
-        filled = [
-            key for key in entity_keys
-            if data.get(key) and int(data.get(key)) != 0
-        ]
-
+        filled = [key for key in entity_keys if data.get(key) and int(data.get(key)) != 0]
+        
         if len(filled) != 1:
             raise ValueError("Exactly one entity ID must be provided")
 
-        for key in entity_keys:
-            if not data.get(key) or int(data.get(key)) == 0:
-                data[key] = None
-
         entity = None
-
         if data.get("quotation_id"):
             entity = self.db.query(Quotation).get(data["quotation_id"])
         elif data.get("po_id"):
@@ -81,34 +62,36 @@ class ApprovalService:
         if not entity:
             raise ValueError("Referenced entity not found")
 
-        creator_user = self.db.query(User).get(entity.created_by)
-
+        creator_id = data.get("creator_id") or entity.created_by
+        creator_user = self.db.query(User).get(creator_id)
         if not creator_user:
             raise ValueError("Creator user not found")
 
-        raw_to_role = creator_user.role.name.upper()
+        raw_creator_role = creator_user.role.name.upper()
+        from_dept = self.ROLE_MAPPING.get(raw_creator_role, "STF")
 
-        if raw_to_role not in self.ROLE_MAPPING:
-            raise ValueError("Creator role not allowed")
-
-        to_dept = self.ROLE_MAPPING[raw_to_role]
-
-        if from_dept == to_dept:
-            raise ValueError("Cannot approve within same department")
+        is_internal = data.get("is_internal", False)
+        if is_internal:
+            to_dept = "ADM"
+        else:
+            raw_login_role = current_user.role.name.upper()
+            to_dept = self.ROLE_MAPPING.get(raw_login_role, "ADM")
+            
+            if from_dept == to_dept:
+                raise ValueError("Cannot approve within same department")
 
         new_code = self.generate_code(entity_type, from_dept, to_dept)
 
         new_approval = Approval(
             type=ApprovalType.PENDING,
             code=new_code,
-            quotation_id=data.get("quotation_id"),
-            po_id=data.get("po_id"),
-            invoice_id=data.get("invoice_id"),
-            expense_id=data.get("expense_id"),
+            quotation_id=data.get("quotation_id") if data.get("quotation_id") != 0 else None,
+            po_id=data.get("po_id") if data.get("po_id") != 0 else None,
+            invoice_id=data.get("invoice_id") if data.get("invoice_id") != 0 else None,
+            expense_id=data.get("expense_id") if data.get("expense_id") != 0 else None,
         )
 
         self.db.add(new_approval)
-        self.db.commit()
 
         return {
             "message": "Approval created successfully",
@@ -201,9 +184,14 @@ class ApprovalService:
             raise ValueError("type is required")
 
         try:
-            approval.type = ApprovalType(data["type"].upper())
-        except ValueError:
-            raise ValueError("Invalid approval status")
+            status_key = data["type"].upper().strip()
+            approval.type = ApprovalType[status_key]
+            
+            if "notes" in data:
+                approval.notes = data["notes"]
+                
+        except KeyError:
+            raise ValueError(f"Invalid approval status: {data['type']}")
 
         self.db.commit()
 
@@ -216,7 +204,7 @@ class ApprovalService:
                 "lead_id": self.extract_lead_id(approval)
             }
         }
-
+    
     def delete(self, approval_id):
 
         approval = self.db.query(Approval).get(approval_id)

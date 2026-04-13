@@ -1,11 +1,13 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, asc, or_
+from flask_jwt_extended import get_jwt_identity
 from app.services.base_service import BaseService
 from app.models.purchase_orders import Purchase_Order
 from app.models.partners import Partner
 from app.models.contacts import Contact
 from app.models.quotations import Quotation
 from app.utils import response
+from app.services.approval_service import ApprovalService
 
 class PurchaseOrderService(BaseService):
     def __init__(self, db: Session):
@@ -15,23 +17,42 @@ class PurchaseOrderService(BaseService):
         purchase_type = data.pop("type", None) 
         partner_id = data.get("partner_id")
 
-        if not purchase_type:
-            raise ValueError("type is required")
-
-        if not partner_id:
-            raise ValueError("partner_id is required")
-
         partner = self.db.query(Partner).get(partner_id)
         if not partner:
             raise ValueError("Partner not found")
 
-        initials = partner.initials
-        if not initials:
-            raise ValueError("Partner does not have initials")
+        data["number"] = self.generate_purchase_number(partner.initials, purchase_type)
 
-        data["number"] = self.generate_purchase_number(initials, purchase_type)
+        try:
+            new_po = Purchase_Order(**data)
+            self.db.add(new_po)
+            self.db.flush()
+            self.db.refresh(new_po)
+            print(f"DEBUG >>> new_po.id={new_po.id}, created_by={new_po.created_by}")
 
-        return self.create(data)
+            approval_service = ApprovalService(self.db)
+            approval_payload = {
+                "entity_type": "Purchase Order",
+                "po_id": new_po.id,
+                "quotation_id": 0,
+                "invoice_id": 0,
+                "expense_id": 0,
+                "creator_id": new_po.created_by,
+                "is_internal": True
+            }
+            
+            approval_service.create(approval_payload)
+
+            result_data = new_po.to_dict() 
+        
+            self.db.commit()
+            
+            return {"code": 201, "message": "Success", "data": result_data}
+
+        except Exception as e:
+            self.db.rollback()
+            print(f"ATOMIC TRANSACTION FAILED: {str(e)}")
+            raise e 
 
     def generate_purchase_number(self, initials, purchase_type):
         type_mapping = {

@@ -1,5 +1,5 @@
 from flask_restx import Namespace, Resource
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.database import db
 from app.services.purchase_order_service import PurchaseOrderService
 from app.schemas.purchase_order_schema import PurchaseOrderSchema
@@ -40,7 +40,10 @@ class PurchaseOrderCreate(Resource):
     @purchase_order_ns.marshal_with(purchase_response_schema)
     def post(self):
         """ Create a new purchase order """
-        return service.create_purchase(purchase_order_ns.payload)
+        current_user_id = get_jwt_identity()  # ← ambil di sini
+        data = dict(purchase_order_ns.payload)  # convert ke dict dulu
+        data["created_by"] = current_user_id   # ← inject ke data
+        return service.create_purchase(data)
 
 @purchase_order_ns.route("/<int:id>")
 class PurchaseOrderDetail(Resource):

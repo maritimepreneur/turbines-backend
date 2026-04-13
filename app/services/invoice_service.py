@@ -6,6 +6,7 @@ from app.models.partners import Partner
 from app.models.purchase_orders import Purchase_Order
 from app.services.base_service import BaseService
 from app.utils import response
+from app.services.approval_service import ApprovalService
 
 class InvoiceService(BaseService):
     def __init__(self, db: Session):
@@ -18,7 +19,7 @@ class InvoiceService(BaseService):
         return response(200, "Success", data)
 
     def create_invoice(self, data):
-        """ Create a new Invoice """
+        """ Create a new Invoice and trigger automatic approval """
         validation = self.validate_fk(data)
         if validation:
             return validation
@@ -27,7 +28,27 @@ class InvoiceService(BaseService):
         if existing:
             return response(400, "Invoice number already exists")
 
-        return super().create(data)
+        result = super().create(data)
+
+        try:
+            new_invoice_id = result.get('data', {}).get('id') if isinstance(result, dict) else result.id
+
+            if new_invoice_id:
+                approval_service = ApprovalService(self.db)
+                approval_payload = {
+                    "entity_type": "Invoice",
+                    "invoice_id": new_invoice_id,
+                    "quotation_id": 0,
+                    "po_id": 0,
+                    "expense_id": 0
+                }
+                
+                approval_service.create(approval_payload)
+                
+        except Exception as e:
+            print(f"Warning: Automatic Approval for Invoice failed: {str(e)}")
+
+        return result
 
     def get_invoice_by_id(self, invoice_id):
         """ Get Invoice details """

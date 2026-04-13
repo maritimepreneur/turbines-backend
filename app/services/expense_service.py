@@ -4,6 +4,7 @@ from app.models.expenses import Expense
 from app.services.base_service import BaseService
 from app.utils import response
 from datetime import date, datetime
+from app.services.approval_service import ApprovalService
 
 class ExpenseService(BaseService):
     def __init__(self, db: Session):
@@ -33,7 +34,6 @@ class ExpenseService(BaseService):
         return response(200, "Success", expenses or [])
     
     def create(self, expense_data: dict):
-        """ Create a new Expense """
         period_date = expense_data.get("period_date")
 
         if not period_date:
@@ -48,7 +48,29 @@ class ExpenseService(BaseService):
         
         expense_data["code"] = self.generate_code(period_date)
 
-        return super().create(expense_data)
+        result = super().create(expense_data)
+
+        
+        try:
+
+            new_expense_id = result.get('data', {}).get('id')
+
+            if new_expense_id:
+                approval_service = ApprovalService(self.db)
+                approval_payload = {
+                    "entity_type": "Expense",
+                    "expense_id": new_expense_id,
+                    "quotation_id": 0,
+                    "po_id": 0,
+                    "invoice_id": 0
+                }
+                
+                approval_service.create(approval_payload)
+                
+        except Exception as e:
+            print(f"Warning: Automatic Approval for Expense failed: {str(e)}")
+
+        return result
     
     def get_expense_by_id(self, expense_id):
         """ Get Expense details """

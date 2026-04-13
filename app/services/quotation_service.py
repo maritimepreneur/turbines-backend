@@ -6,6 +6,7 @@ from app.models.partners import Partner
 from app.models.leads import Lead
 from app.services.base_service import BaseService
 from app.utils import response
+from app.services.approval_service import ApprovalService
 
 class QuotationService(BaseService):
     def __init__(self, db: Session):
@@ -17,9 +18,29 @@ class QuotationService(BaseService):
         return response(200, "Success", quotations or [])
     
     def create_quotation(self, quotation_data):
-        """ Create a new quotation """
         self.validate_fk(quotation_data)
-        return super().create(quotation_data)
+    
+
+        result = super().create(quotation_data)
+    
+        try:
+            new_quotation_id = result.get('data').get('id') if isinstance(result, dict) else result.id
+            
+            approval_service = ApprovalService(self.db)
+            approval_payload = {
+                "entity_type": "Quotation",
+                "quotation_id": new_quotation_id,
+                "po_id": 0,
+                "invoice_id": 0,
+                "expense_id": 0
+            }
+            approval_service.create(approval_payload)
+            
+        except Exception as e:
+           
+            print(f"Warning: Automatic Approval failed: {str(e)}")
+        
+        return result
     
     def get_quotation_by_id(self, quotation_id):
         """ Get Quotation details """
