@@ -50,15 +50,19 @@ class ScheduleService(BaseService):
     
     def create_schedule(self, user_id: int, user_role: str, data: dict):
         try:
-            # Cari employee berdasarkan user_id yang sedang login
-            employee = self.db.query(Employee).filter(Employee.user_id == user_id).first()
-            if not employee:
-                return response(404, "Employee not found for this user")
-                
-            # Tetapkan employee_id berdasarkan employee yang ditemukan
-            data["employee_id"] = employee.id
-                
-            # Buat schedule baru
+            if user_role == "ADMIN" and data.get("employee_id"):
+                # ADMIN + employee_id ada di body → langsung pakai
+                employee = self.db.query(Employee).filter(Employee.id == data["employee_id"]).first()
+                if not employee:
+                    return response(404, "Employee not found")
+                # employee_id sudah ada di data, tidak perlu inject ulang
+            else:
+                # USER biasa (atau ADMIN tanpa employee_id) → ambil dari JWT
+                employee = self.db.query(Employee).filter(Employee.user_id == user_id).first()
+                if not employee:
+                    return response(404, "Employee not found for this user")
+                data["employee_id"] = employee.id  # override/inject dari JWT
+
             return self.create(data)
         except Exception as e:
             return response(500, str(e))

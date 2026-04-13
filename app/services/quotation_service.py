@@ -57,6 +57,14 @@ class QuotationService(BaseService):
     def __init__(self, db: Session):
         super().__init__(db, Quotation)
 
+    def inject_meta(self, obj):
+        user_id = self.get_user_id_login()
+
+        obj.created_by = user_id
+        obj.updated_by = user_id
+
+        return obj
+
     def get_all_quotations(self):
         """ Get all Quotation """
         quotations = self.db.query(Quotation).all()
@@ -68,23 +76,25 @@ class QuotationService(BaseService):
         try:
             with self.db.begin():
 
-                quotation = Quotation(**quotation_data)
+                quotation = self.inject_meta(Quotation(**quotation_data))
 
                 for item_data in items_data:
 
                     # Expense
-                    expense = Expense(
+                    expense = self.inject_meta(Expense(
                         period_date=date.today(),
                         code=generate_expense_code(self.db),
                         total_amount=item_data["cost"],
                         notes=item_data.get("name")
-                    )
+                    ))
 
                     # Approval
-                    approval = Approval(
+                    approval = self.inject_meta(Approval(
                         type=ApprovalType.PENDING,
                         code=generate_approval_code(self.db)
-                    )
+                    ))
+
+                    self.db.add(approval)
 
                     expense.approval = approval
 
@@ -92,10 +102,10 @@ class QuotationService(BaseService):
                     self.db.flush()
 
                     # Item
-                    item = Item(
+                    item = self.inject_meta(Item(
                         **item_data,
                         expense=expense
-                    )
+                    ))
 
                     # generate item code setelah expense ada
                     item.code = generate_item_code(
@@ -156,6 +166,8 @@ class QuotationService(BaseService):
                 for key, value in updated_data.items():
                     setattr(quotation, key, value)
 
+                quotation.updated_by = self.get_user_id_login()
+
                 # existing items map
                 existing_items = {item.id: item for item in quotation.items}
                 incoming_ids = []
@@ -175,40 +187,46 @@ class QuotationService(BaseService):
                         item.type = item_data["type"]
                         item.amount_type = item_data["amount_type"]
 
+                        item.updated_by = self.get_user_id_login()
+
                         # update expense
                         if item.expense:
                             item.expense.total_amount = item.cost
                             item.expense.notes = item.name
 
+                            item.expense.updated_by = self.get_user_id_login()
+
                             # reset approval kalau perlu
                             if item.expense.approval:
                                 item.expense.approval.type = ApprovalType.PENDING
+
+                                item.expense.approval.updated_by = self.get_user_id_login()
 
                         incoming_ids.append(item.id)
 
                     # CREATE NEW ITEM
                     else:
-                        expense = Expense(
+                        expense = self.inject_meta(Expense(
                             period_date=date.today(),
                             code=generate_expense_code(self.db),
                             total_amount=item_data["cost"],
                             notes=item_data.get("name")
-                        )
+                        ))
 
-                        approval = Approval(
+                        approval = self.inject_meta(Approval(
                             type=ApprovalType.PENDING,
                             code=generate_approval_code(self.db)
-                        )
+                        ))
 
                         expense.approval = approval
 
                         self.db.add(expense)
                         self.db.flush()
 
-                        item = Item(
+                        item = self.inject_meta(Item(
                             **item_data,
                             expense=expense
-                        )
+                        ))
 
                         item.code = generate_item_code(
                             item.name,
