@@ -60,7 +60,7 @@ class ContactDetail(Resource):
     @contact_ns.marshal_with(contact_response_schema)
     def put(self, id):
         """ Update contact detail """
-        return contact_svc.update(id, contact_ns.payload)
+        return contact_svc.update_contact_by_id(id, contact_ns.payload)
 
     @jwt_required()
     @role_required("ADMIN")
