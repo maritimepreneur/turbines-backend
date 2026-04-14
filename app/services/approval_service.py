@@ -113,6 +113,8 @@ class ApprovalService:
             invoice_id=data.get("invoice_id"),
             expense_id=data.get("expense_id"),
         )
+        new_approval.created_by = current_user_id
+        new_approval.updated_by = current_user_id
 
         self.db.add(new_approval)
         self.db.commit()
@@ -212,6 +214,7 @@ class ApprovalService:
             approval.status = ApprovalStatus[status_value.upper()]
         except KeyError:
             raise ValueError("Invalid approval status")
+        approval.updated_by = get_jwt_identity()
 
         self.db.commit()
 

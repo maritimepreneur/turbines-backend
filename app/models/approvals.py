@@ -2,6 +2,7 @@ from app.database import db
 from enum import Enum
 from sqlalchemy import Column, Integer, String, ForeignKey, Enum as SQLEnum, UniqueConstraint
 from sqlalchemy.orm import relationship
+from app.models.meta.meta import Meta
 
 class ApprovalStatus(Enum):
     PENDING = "Pending"
@@ -15,7 +16,7 @@ class ApprovalType(Enum):
     INVOICE = "Invoice"
     EXPENSE = "Expense"
 
-class Approval(db.Model):
+class Approval(db.Model, Meta):
     __tablename__ = "approvals"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -70,5 +71,11 @@ class Approval(db.Model):
             "quotation_id": self.quotation_id,
             "po_id": self.po_id,
             "invoice_id": self.invoice_id,
-            "expense_id": self.expense_id
+            "expense_id": self.expense_id,
+            "meta": {
+                "created_at": self.created_at.isoformat() if self.created_at else None,
+                "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+                "created_by": self.created_by,
+                "updated_by": self.updated_by,
+            }
         }

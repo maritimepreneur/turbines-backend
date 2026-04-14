@@ -35,14 +35,17 @@ def generate_approval_code(db, jenis="QUO", dari="FIN", ke="BD"):
     return f"{jenis}-{dari}-{ke}-{date_prefix}{running}"
 
 def generate_item_code(name: str, item_type: str, quotation_id: int, index: int):
-    prefix = (name[:3].upper() if name else "XXX").ljust(3, "X")
+    prefix = "".join((name or "XXX").split())[:3].upper().ljust(3, "X")
+
+    normalized_type = item_type.value if hasattr(item_type, "value") else item_type
+    type_key = str(normalized_type).strip().upper()
 
     type_map = {
-        "Service": "SVC",
-        "Goods": "GDS"
+        "SERVICE": "SVC",
+        "GOODS": "GDS"
     }
 
-    type_code = type_map.get(item_type, "UNK")
+    type_code = type_map.get(type_key, "UNK")
 
     return f"{prefix}-{type_code}-{quotation_id}-{str(index).zfill(3)}"
 
@@ -110,8 +113,9 @@ class QuotationService(BaseService):
                     quotation_id=quotation.id
                 )
 
-                approval.created_by = user_id
-                approval.updated_by = user_id
+                # Keep approval audit fields aligned with the newly-created quotation.
+                approval.created_by = quotation.created_by
+                approval.updated_by = quotation.updated_by
 
                 self.db.add(approval)
 
