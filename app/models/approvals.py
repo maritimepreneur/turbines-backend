@@ -3,19 +3,29 @@ from enum import Enum
 from sqlalchemy import Column, Integer, String, ForeignKey, Enum as SQLEnum, UniqueConstraint
 from sqlalchemy.orm import relationship
 
-class ApprovalType(Enum):
+class ApprovalStatus(Enum):
     PENDING = "Pending"
     APPROVED = "Approved"
     REJECTED = "Rejected"
     LEAVE = "Leave"
 
+class ApprovalType(Enum):
+    QUOTATION = "Quotation"
+    PO = "Purchase Order"
+    INVOICE = "Invoice"
+    EXPENSE = "Expense"
+
 class Approval(db.Model):
     __tablename__ = "approvals"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    status = Column(
+        SQLEnum(ApprovalStatus, name="approval_status_enum"),
+        nullable=True
+    )
     type = Column(
         SQLEnum(ApprovalType, name="approval_type_enum"),
-        nullable=False
+        nullable=True
     )
     code = Column(String, nullable=False)
 
@@ -26,7 +36,8 @@ class Approval(db.Model):
     quotation_id = Column(
         Integer,
         ForeignKey("quotations.id"),
-        nullable=True
+        nullable=True,
+        unique=True
     )
     po_id = Column(
         Integer,
@@ -41,10 +52,11 @@ class Approval(db.Model):
     expense_id = Column(
         Integer,
         ForeignKey("expenses.id"),
+        nullable=True,
         unique=True
     )
 
-    quotations = relationship("Quotation", back_populates="approvals")
+    quotation = relationship("Quotation", back_populates="approval", uselist=False)
     purchase_orders = relationship("Purchase_Order", back_populates="approvals")
     invoices = relationship("Invoice", back_populates="approvals")
     expense = relationship("Expense", back_populates="approval", uselist=False)
@@ -52,6 +64,7 @@ class Approval(db.Model):
     def to_dict(self):
         return {
             "id": self.id,
+            "status": self.status.value if self.status else None,
             "type": self.type.value if self.type else None,
             "code": self.code,
             "quotation_id": self.quotation_id,

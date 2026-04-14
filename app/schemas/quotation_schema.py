@@ -4,20 +4,11 @@ from app.schemas.base_schema import BaseSchema
 class QuotationSchema(BaseSchema):
     @classmethod
     def get_schema(cls, namespace: Model):
-        approval_model = namespace.model("ExpenseApproval", {
+        approval_model = namespace.model("Approval", {
             "id": fields.Integer,
             "code": fields.String,
-            "type": fields.String,
-        })
-
-        expense_model = namespace.model("ItemExpense", {
-            "id": fields.Integer,
-            "code": fields.String,
-            "total_amount": fields.Float,
+            "type": fields.String(attribute=lambda x: x.type.value if x and x.type else None),
             "status": fields.String(attribute=lambda x: x.status.value if x and x.status else None),
-
-            # nested approval
-            "approval": fields.Nested(approval_model),
         })
         
         item_model = namespace.model("QuotationItem", {
@@ -26,12 +17,10 @@ class QuotationSchema(BaseSchema):
             "cost": fields.Float,
             "amount": fields.Float,
             "billed_amount": fields.Float,
-            "type": fields.String(attribute=lambda x: x.type.value if x.type else None),
-            "amount_type": fields.String,
+            "type": fields.String(attribute=lambda x: x.type.value if x and x.type else None),
+            "amount_type": fields.String(attribute=lambda x: x.amount_type.value if x and x.amount_type else None),
             "code": fields.String,
             "attachments": fields.Raw,
-
-            "expense": fields.Nested(expense_model),
         })
 
         return namespace.model("QuotationResponse", {
@@ -63,6 +52,7 @@ class QuotationSchema(BaseSchema):
                     "current_stages": fields.String,
                 })),
                 "items": fields.List(fields.Nested(item_model), attribute="items"),
+                "approval": fields.Nested(approval_model, attribute="approval"),
                 "meta": fields.Nested(namespace.model("Meta", {
                     "created_at": fields.String(description="ISO 8601 Date"),
                     "updated_at": fields.String(description="ISO 8601 Date"),

@@ -26,17 +26,10 @@ class Expense(db.Model, Meta):
     total_amount = Column(Numeric(14, 2), nullable=False)
     notes = Column(Text, nullable=False)
 
-    item_id = Column(
-        Integer,
-        ForeignKey("items.id"),
-        unique=True
-    )
-
     __table_args__ = (
         UniqueConstraint("code", name="uq_expense_code"),
     )
 
-    item = relationship("Item", back_populates="expense", uselist=False)
     approval = relationship("Approval", back_populates="expense", uselist=False, cascade="all, delete-orphan")
 
     def to_dict(self):

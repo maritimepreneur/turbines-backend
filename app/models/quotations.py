@@ -33,7 +33,7 @@ class Quotation(db.Model, Meta):
     contact = relationship("Contact", back_populates="quotations")
     partner = relationship("Partner", back_populates="quotations")
     purchase_orders = relationship("Purchase_Order", back_populates="quotation")
-    approvals = relationship("Approval", back_populates="quotations")
+    approval = relationship("Approval", back_populates="quotation", uselist=False, cascade="all, delete-orphan")
     items = relationship("Item", back_populates="quotation", cascade="all, delete-orphan")
     documents = relationship("Document", back_populates="quotation")
 

@@ -3,7 +3,7 @@ from flask_jwt_extended import get_jwt_identity
 from datetime import datetime
 from flask import abort
 
-from app.models.approvals import Approval, ApprovalType
+from app.models.approvals import Approval, ApprovalType, ApprovalStatus
 from app.models.users import User
 from app.models.quotations import Quotation
 from app.models.purchase_orders import Purchase_Order
@@ -18,6 +18,12 @@ class ApprovalService:
         "Purchase Order": "PO",
         "Invoice": "INV",
         "Expense": "EXP"
+    }
+    ENTITY_ENUM_MAPPING = {
+        "Quotation": ApprovalType.QUOTATION,
+        "Purchase Order": ApprovalType.PO,
+        "Invoice": ApprovalType.INVOICE,
+        "Expense": ApprovalType.EXPENSE,
     }
 
     ROLE_MAPPING = {
@@ -99,7 +105,8 @@ class ApprovalService:
         new_code = self.generate_code(entity_type, from_dept, to_dept)
 
         new_approval = Approval(
-            type=ApprovalType.PENDING,
+            status=ApprovalStatus.PENDING,
+            type=self.ENTITY_ENUM_MAPPING[entity_type],
             code=new_code,
             quotation_id=data.get("quotation_id"),
             po_id=data.get("po_id"),
@@ -197,12 +204,13 @@ class ApprovalService:
         if not approval:
             abort(404, f"Approval ID {approval_id} not found")
 
-        if "type" not in data:
-            raise ValueError("type is required")
+        status_value = data.get("status") or data.get("type")
+        if not status_value:
+            raise ValueError("status is required")
 
         try:
-            approval.type = ApprovalType[data["type"].upper()]
-        except ValueError:
+            approval.status = ApprovalStatus[status_value.upper()]
+        except KeyError:
             raise ValueError("Invalid approval status")
 
         self.db.commit()
@@ -235,28 +243,17 @@ class ApprovalService:
 
     def extract_lead_id(self, approval):
 
-        try:
-            if approval.quotations:
-                return approval.quotations.lead_id
+        if approval.quotation:
+            return approval.quotation.lead_id
 
-            if approval.purchase_orders and approval.purchase_orders.quotation:
-                return approval.purchase_orders.quotation.lead_id
+        if approval.purchase_orders and approval.purchase_orders.quotation:
+            return approval.purchase_orders.quotation.lead_id
 
-            if (
-                approval.invoices
-                and approval.invoices.purchase_order
-                and approval.invoices.purchase_order.quotation
-            ):
-                return approval.invoices.purchase_order.quotation.lead_id
-
-            if (
-                approval.expense
-                and approval.expense.item
-                and approval.expense.item.quotation
-            ):
-                return approval.expense.item.quotation.lead_id
-
-        except Exception:
-            return None
+        if (
+            approval.invoices
+            and approval.invoices.purchase_order
+            and approval.invoices.purchase_order.quotation
+        ):
+            return approval.invoices.purchase_order.quotation.lead_id
 
         return None
