@@ -4,14 +4,21 @@ from app.schemas.base_schema import BaseSchema
 class QuotationSchema(BaseSchema):
     @classmethod
     def get_schema(cls, namespace: Model):
+        approval_model = namespace.model("Approval", {
+            "id": fields.Integer,
+            "code": fields.String,
+            "type": fields.String(attribute=lambda x: x.type.value if x and x.type else None),
+            "status": fields.String(attribute=lambda x: x.status.value if x and x.status else None),
+        })
+        
         item_model = namespace.model("QuotationItem", {
             "id": fields.Integer,
             "name": fields.String,
             "cost": fields.Float,
             "amount": fields.Float,
             "billed_amount": fields.Float,
-            "type": fields.String,
-            "amount_type": fields.String,
+            "type": fields.String(attribute=lambda x: x.type.value if x and x.type else None),
+            "amount_type": fields.String(attribute=lambda x: x.amount_type.value if x and x.amount_type else None),
             "code": fields.String,
             "attachments": fields.Raw,
         })
@@ -44,7 +51,8 @@ class QuotationSchema(BaseSchema):
                     "period": fields.String,
                     "current_stages": fields.String,
                 })),
-                "item": fields.List(fields.Nested(item_model), attribute="items"),
+                "items": fields.List(fields.Nested(item_model), attribute="items"),
+                "approval": fields.Nested(approval_model, attribute="approval"),
                 "meta": fields.Nested(namespace.model("Meta", {
                     "created_at": fields.String(description="ISO 8601 Date"),
                     "updated_at": fields.String(description="ISO 8601 Date"),
@@ -56,17 +64,26 @@ class QuotationSchema(BaseSchema):
     
     @classmethod
     def post_schema(cls, namespace: Model):
+        item_model = namespace.model("QuotationItemInput", {
+            "name": fields.String(required=True),
+            "cost": fields.Float(required=True),
+            "amount": fields.Float(required=True),
+            "billed_amount": fields.Float(required=True),
+            "type": fields.String(required=True),
+            "amount_type": fields.String(required=True),
+            "attachments": fields.Raw,
+        })
+
         return namespace.model("QuotationPostResponse", {
-            "total_amount": fields.String(
-                description="Decimal/Numeric amount as string, example 15000.00",
-                required=True
-            ),
+            "total_amount": fields.String(required=True),
             "document_content": fields.String(required=True),
             "summary": fields.String(required=True),
             "offering_letter": fields.String(required=True),
-            "contact_id": fields.Integer(required=False, allow_null=True),
-            "partner_id": fields.Integer(required=False, allow_null=True),
-            "lead_id": fields.Integer(required=False, allow_null=True),
+            "contact_id": fields.Integer,
+            "partner_id": fields.Integer,
+            "lead_id": fields.Integer,
+
+            "items": fields.List(fields.Nested(item_model))
         })
 
     @classmethod

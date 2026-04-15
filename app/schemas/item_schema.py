@@ -14,7 +14,6 @@ class ItemsSchema(BaseSchema):
             "type": fields.String(required=True),
             "amount_type": fields.String(required=True),
             "attachments": fields.List(fields.Raw, required=False),
-            "expense_id": fields.Integer(required=False),
             "quotation_id": fields.Integer(required=False),
         })
 
@@ -34,7 +33,6 @@ class ItemsSchema(BaseSchema):
             "sort_by": fields.String(required=True, default="id"),
             "sort_order": fields.String(required=True, default="DESC"),
             "search": fields.String(description="Search by Item Name or Type"),
-            "expense_ids": fields.List(fields.Integer, description="Filter by Expense IDs"),
             "quotation_ids": fields.List(fields.Integer, description="Filter by Quotation IDs")
         }, ordered=True)
 
@@ -50,7 +48,6 @@ class ItemsSchema(BaseSchema):
             "type": fields.String,
             "amount_type": fields.String,
             "code": fields.String,
-            "expense_id": fields.Integer,
             "quotation_id": fields.Integer,
             "meta": fields.Nested(namespace.model("Meta", {
                     "created_at": fields.String(description="ISO 8601 Date"),
