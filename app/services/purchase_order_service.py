@@ -1,10 +1,12 @@
-from sqlalchemy.orm import Session
+from datetime import datetime
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import desc, asc, or_
 from app.services.base_service import BaseService
 from app.models.purchase_orders import Purchase_Order
 from app.models.partners import Partner
 from app.models.contacts import Contact
 from app.models.quotations import Quotation
+from app.models.approvals import Approval, ApprovalStatus, ApprovalType
 from app.utils import response
 
 class PurchaseOrderService(BaseService):
@@ -12,26 +14,95 @@ class PurchaseOrderService(BaseService):
         super().__init__(db, Purchase_Order)
 
     def create_purchase(self, data):
-        purchase_type = data.pop("type", None) 
-        partner_id = data.get("partner_id")
+        try:
+            payload = dict(data)
+            purchase_type = payload.pop("type", None)
+            quotation_id = payload.get("quotation_id")
 
-        if not purchase_type:
-            raise ValueError("type is required")
+            if not quotation_id:
+                raise ValueError("quotation_id is required")
 
-        if not partner_id:
-            raise ValueError("partner_id is required")
+            quotation = (
+                self.db.query(Quotation)
+                .options(joinedload(Quotation.items))
+                .get(quotation_id)
+            )
+            if not quotation:
+                raise ValueError("Quotation not found")
 
-        partner = self.db.query(Partner).get(partner_id)
-        if not partner:
-            raise ValueError("Partner not found")
+            existing_po = (
+                self.db.query(Purchase_Order)
+                .filter(Purchase_Order.quotation_id == quotation_id)
+                .first()
+            )
+            if existing_po:
+                raise ValueError("Purchase order for this quotation already exists")
 
-        initials = partner.initials
-        if not initials:
-            raise ValueError("Partner does not have initials")
+            partner = self.db.query(Partner).get(quotation.partner_id)
+            if not partner:
+                raise ValueError("Partner on quotation not found")
+            if not partner.initials:
+                raise ValueError("Partner does not have initials")
 
-        data["number"] = self.generate_purchase_number(initials, purchase_type)
+            if not payload.get("attachments"):
+                raise ValueError("attachments is required")
 
-        return self.create(data)
+            if not purchase_type:
+                purchase_type = self.infer_purchase_type(quotation)
+
+            user_id = self.get_user_id_login()
+            number = self.generate_purchase_number(partner.initials, purchase_type)
+
+            purchase_order = Purchase_Order(
+                number=number,
+                attachments=payload.get("attachments"),
+                partner_id=quotation.partner_id,
+                contact_id=quotation.contact_id,
+                quotation_id=quotation.id,
+            )
+            purchase_order.created_by = user_id
+            purchase_order.updated_by = user_id
+
+            self.db.add(purchase_order)
+            self.db.flush()
+
+            approval = Approval(
+                status=ApprovalStatus.PENDING,
+                type=ApprovalType.PO,
+                code=self.generate_po_approval_code(),
+                po_id=purchase_order.id,
+            )
+            approval.created_by = user_id
+            approval.updated_by = user_id
+
+            self.db.add(approval)
+            self.db.commit()
+            self.db.refresh(purchase_order)
+
+            return response(201, "Created", purchase_order)
+        except ValueError as e:
+            self.db.rollback()
+            return response(400, str(e))
+        except Exception as e:
+            self.db.rollback()
+            return response(500, str(e))
+
+    def infer_purchase_type(self, quotation: Quotation):
+        type_names = {
+            (item.type.name if hasattr(item.type, "name") else str(item.type).upper())
+            for item in quotation.items
+            if item.type is not None
+        }
+
+        if len(type_names) == 1:
+            only_type = next(iter(type_names))
+            if only_type == "GOODS":
+                return "goods"
+            if only_type == "SERVICE":
+                return "service"
+
+        # Default fallback to goods when item composition is mixed/unknown.
+        return "goods"
 
     def generate_purchase_number(self, initials, purchase_type):
         type_mapping = {
@@ -63,9 +134,30 @@ class PurchaseOrderService(BaseService):
 
         return f"{prefix}{new_increment:06d}"
 
+    def generate_po_approval_code(self):
+        date_prefix = datetime.now().strftime("%d%m%y")
+        last = (
+            self.db.query(Approval)
+            .filter(Approval.code.like(f"%{date_prefix}%"))
+            .order_by(desc(Approval.id))
+            .first()
+        )
+
+        running_number = 1
+        if last and last.code:
+            try:
+                running_number = int(last.code[-6:]) + 1
+            except ValueError:
+                running_number = 1
+
+        return f"PO-FIN-BD-{date_prefix}{running_number:06d}"
+
     def update_purchase(self, id, data):
         data.pop("number", None)
-        data.pop("type", None)  
+        data.pop("type", None)
+        data.pop("partner_id", None)
+        data.pop("contact_id", None)
+        data.pop("quotation_id", None)
         return self.update(id, data)
 
     def get_purchase_order_list_filter(self, payload):

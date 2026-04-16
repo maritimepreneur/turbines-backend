@@ -41,14 +41,15 @@ class Invoice(db.Model, Meta):
     purchase_order_id = Column(
         Integer,
         ForeignKey("purchase_orders.id"),
-        nullable=True
+        nullable=True,
+        unique=True
     )
 
     contact = relationship("Contact", back_populates="invoices")
     partner = relationship("Partner", back_populates="invoices")
-    purchase_order = relationship("Purchase_Order", back_populates="invoices")
+    purchase_order = relationship("Purchase_Order", back_populates="invoice")
     payments = relationship("Payment", back_populates="invoice")
-    approvals = relationship("Approval", back_populates="invoices")
+    approval = relationship("Approval", back_populates="invoice", uselist=False, cascade="all, delete-orphan")
     projects = relationship("Project", back_populates="invoices")
 
     def to_dict(self):

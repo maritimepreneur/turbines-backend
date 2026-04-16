@@ -28,14 +28,20 @@ class Purchase_Order(db.Model, Meta):
     quotation_id = Column(
         Integer,
         ForeignKey("quotations.id"),
-        nullable=True
+        nullable=False,
+        unique=True
     )
 
-    quotation = relationship("Quotation", back_populates="purchase_orders")
+    quotation = relationship("Quotation", back_populates="purchase_order")
     partner = relationship("Partner", back_populates="purchase_orders")
     contact = relationship("Contact", back_populates="purchase_orders")
-    invoices = relationship("Invoice", back_populates="purchase_order")
-    approvals = relationship("Approval", back_populates="purchase_orders")
+    invoice = relationship("Invoice", back_populates="purchase_order")
+    approval = relationship(
+        "Approval",
+        back_populates="purchase_order",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
 
     def to_dict(self):
         return {
