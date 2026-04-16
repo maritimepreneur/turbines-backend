@@ -19,28 +19,37 @@ class QuotationService(BaseService):
     
     def create_quotation(self, quotation_data):
         self.validate_fk(quotation_data)
-    
-
-        result = super().create(quotation_data)
-    
+        
         try:
-            new_quotation_id = result.get('data').get('id') if isinstance(result, dict) else result.id
+            new_quotation = Quotation(**quotation_data)
+            self.db.add(new_quotation)
             
+            self.db.flush()
+            self.db.refresh(new_quotation)
+
             approval_service = ApprovalService(self.db)
             approval_payload = {
                 "entity_type": "Quotation",
-                "quotation_id": new_quotation_id,
+                "quotation_id": new_quotation.id,
                 "po_id": 0,
                 "invoice_id": 0,
-                "expense_id": 0
+                "expense_id": 0,
+                "creator_id": new_quotation.created_by, 
+                "is_internal": True
             }
             approval_service.create(approval_payload)
             
+            result_data = new_quotation.to_dict()
+            
+            self.db.commit()
+            
+            return {"code": 201, "message": "Success", "data": result_data}
+
         except Exception as e:
-           
-            print(f"Warning: Automatic Approval failed: {str(e)}")
-        
-        return result
+
+            self.db.rollback()
+            print(f"ATOMIC TRANSACTION FAILED (Quotation): {str(e)}")
+            raise e
     
     def get_quotation_by_id(self, quotation_id):
         """ Get Quotation details """

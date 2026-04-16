@@ -40,11 +40,14 @@ class PurchaseOrderService(BaseService):
                 "creator_id": new_po.created_by,
                 "is_internal": True
             }
-            
-            approval_service.create(approval_payload)
+           
+            approval_result = approval_service.create(approval_payload)
 
             result_data = new_po.to_dict() 
-        
+            
+            if approval_result and "data" in approval_result:
+                result_data["approval_code"] = approval_result["data"].get("code")
+
             self.db.commit()
             
             return {"code": 201, "message": "Success", "data": result_data}
