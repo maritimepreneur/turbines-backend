@@ -249,8 +249,8 @@ class ApprovalService:
         if approval.quotation:
             return approval.quotation.lead_id
 
-        if approval.purchase_orders and approval.purchase_orders.quotation:
-            return approval.purchase_orders.quotation.lead_id
+        if approval.purchase_order and approval.purchase_order.quotation:
+            return approval.purchase_order.quotation.lead_id
 
         if (
             approval.invoices

@@ -5,6 +5,19 @@ class PurchaseOrderSchema(BaseSchema):
     @classmethod
     def get_schema(cls, namespace: Model):
         """Schema untuk Detail Purchase Order (Single Object)"""
+        approval_model = namespace.model("POApproval", {
+            "id": fields.Integer,
+            "code": fields.String,
+            "type": fields.String(attribute=lambda x: x.type.value if x and x.type else None),
+            "status": fields.String(attribute=lambda x: x.status.value if x and x.status else None),
+            "meta": fields.Nested(namespace.model("POApprovalMeta", {
+                "created_at": fields.String(description="ISO 8601 Date"),
+                "updated_at": fields.String(description="ISO 8601 Date"),
+                "created_by": fields.Integer,
+                "updated_by": fields.Integer,
+            })),
+        })
+
         return namespace.model("PurchaseOrderResponse", {
             **BaseSchema.get_schema(namespace),
             "data": fields.Nested(namespace.model("PurchaseOrder", {
@@ -24,8 +37,13 @@ class PurchaseOrderSchema(BaseSchema):
                 }), allow_null=True),
                 "quotation": fields.Nested(namespace.model("POQuotation", {
                     "id": fields.Integer,
+                    "total_amount": fields.String,
+                    "document_content": fields.String,
                     "summary": fields.String,
+                    "offering_letter": fields.String,
+                    "lead_id": fields.Integer,
                 }), allow_null=True),
+                "approval": fields.Nested(approval_model, allow_null=True),
                 "meta": fields.Nested(namespace.model("Meta", {
                     "created_at": fields.String(description="ISO 8601 Date"),
                     "updated_at": fields.String(description="ISO 8601 Date"),
@@ -40,10 +58,8 @@ class PurchaseOrderSchema(BaseSchema):
         """Schema untuk Create/Update Purchase Order (Payload Request)"""
         return namespace.model("PurchaseOrderPostRequest", {
             "attachments": fields.String(required=True, description="Link URL atau path lampiran file"),
-            "partner_id": fields.Integer(required=True, description="ID dari tabel Partners"),
-            "contact_id": fields.Integer(required=True, description="ID dari tabel Contacts"),
             "quotation_id": fields.Integer(required=True, description="ID dari tabel Quotations"),
-            "type": fields.String(required=True, description="Jenis PO: service atau goods",enum=["service", "goods"]),
+            "type": fields.String(required=False, description="Opsional. Jenis PO: service atau goods (otomatis infer dari quotation jika kosong)",enum=["service", "goods"]),
             "number": fields.String(readonly=True, description="Auto-generated (Tidak perlu diisi saat Create)")
         }, ordered=True)
 

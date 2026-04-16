@@ -43,7 +43,8 @@ class Approval(db.Model, Meta):
     po_id = Column(
         Integer,
         ForeignKey("purchase_orders.id"),
-        nullable=True
+        nullable=True,
+        unique=True
     )
     invoice_id = Column(
         Integer,
@@ -58,7 +59,7 @@ class Approval(db.Model, Meta):
     )
 
     quotation = relationship("Quotation", back_populates="approval", uselist=False)
-    purchase_orders = relationship("Purchase_Order", back_populates="approvals")
+    purchase_order = relationship("Purchase_Order", back_populates="approval", uselist=False)
     invoices = relationship("Invoice", back_populates="approvals")
     expense = relationship("Expense", back_populates="approval", uselist=False)
 
