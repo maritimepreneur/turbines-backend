@@ -60,7 +60,7 @@ class Approval(db.Model, Meta):
 
     quotation = relationship("Quotation", back_populates="approval", uselist=False)
     purchase_order = relationship("Purchase_Order", back_populates="approval", uselist=False)
-    invoices = relationship("Invoice", back_populates="approvals")
+    invoice = relationship("Invoice", back_populates="approval", uselist=False)
     expense = relationship("Expense", back_populates="approval", uselist=False)
 
     def to_dict(self):

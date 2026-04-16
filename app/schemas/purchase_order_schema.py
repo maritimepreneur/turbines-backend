@@ -18,6 +18,18 @@ class PurchaseOrderSchema(BaseSchema):
             })),
         })
 
+        item_model = namespace.model("QuotationItem", {
+            "id": fields.Integer,
+            "name": fields.String,
+            "cost": fields.Float,
+            "amount": fields.Float,
+            "billed_amount": fields.Float,
+            "type": fields.String(attribute=lambda x: x.type.value if x and x.type else None),
+            "amount_type": fields.String(attribute=lambda x: x.amount_type.value if x and x.amount_type else None),
+            "code": fields.String,
+            "attachments": fields.Raw,
+        })
+
         return namespace.model("PurchaseOrderResponse", {
             **BaseSchema.get_schema(namespace),
             "data": fields.Nested(namespace.model("PurchaseOrder", {
@@ -42,6 +54,7 @@ class PurchaseOrderSchema(BaseSchema):
                     "summary": fields.String,
                     "offering_letter": fields.String,
                     "lead_id": fields.Integer,
+                    "items": fields.List(fields.Nested(item_model), attribute="items"),
                 }), allow_null=True),
                 "approval": fields.Nested(approval_model, allow_null=True),
                 "meta": fields.Nested(namespace.model("Meta", {

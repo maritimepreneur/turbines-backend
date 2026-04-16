@@ -35,7 +35,7 @@ class Purchase_Order(db.Model, Meta):
     quotation = relationship("Quotation", back_populates="purchase_order")
     partner = relationship("Partner", back_populates="purchase_orders")
     contact = relationship("Contact", back_populates="purchase_orders")
-    invoices = relationship("Invoice", back_populates="purchase_order")
+    invoice = relationship("Invoice", back_populates="purchase_order")
     approval = relationship(
         "Approval",
         back_populates="purchase_order",
