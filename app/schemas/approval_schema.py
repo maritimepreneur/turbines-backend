@@ -11,8 +11,11 @@ class ApprovalSchema(BaseSchema):
             **BaseSchema.get_schema(namespace),
             "data": fields.Nested(namespace.model("Approval", {
                 "id": fields.Integer,
+                "status": fields.String(
+                    description="Approval status: Pending / Approved / Rejected / Leave"
+                ),
                 "type": fields.String(
-                    description="Approval status: Pending / Approved / Rejected"
+                    description="Approval type: Quotation / Purchase Order / Invoice / Expense"
                 ),
                 "code": fields.String(
                     description="Format: QUO-FIN-BD-130226000001"
@@ -50,9 +53,9 @@ class ApprovalSchema(BaseSchema):
     def update_schema(cls, namespace: Model):
         """Schema untuk Update Approval Status"""
         return namespace.model("ApprovalUpdateRequest", {
-            "type": fields.String(
+            "status": fields.String(
                 required=True,
-                enum=["PENDING", "APPROVED", "REJECTED"],
+                enum=["PENDING", "APPROVED", "REJECTED", "LEAVE"],
                 description="Update approval status"
             )
         }, ordered=True)
@@ -63,6 +66,7 @@ class ApprovalSchema(BaseSchema):
 
         approval_item_model = namespace.model("ApprovalFilterItem", {
             "id": fields.Integer,
+            "status": fields.String,
             "type": fields.String,
             "code": fields.String,
             "quotation_id": fields.Integer,

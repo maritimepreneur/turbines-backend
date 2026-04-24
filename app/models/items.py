@@ -9,19 +9,33 @@ class ItemType(Enum):
     SERVICE = "Service"
     GOODS = "Goods"
 
+class AmountType(Enum):
+    PCS = "Pcs"
+    KG = "Kg"
+    ITEM = "Item"
+    LITER = "Liter"
+    METER = "Meter"
+    BOX = "Box"
+    PACK = "Pack"
+    HOUR = "Hour"
+    DAY = "Day"
+    SESSION = "Session"
+
 class Item(db.Model, Meta):
     __tablename__ = "items"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, nullable=False)
-    cost = Column(Numeric(14, 2), nullable=False)
-    amount = Column(Numeric(14, 2), nullable=False)
-    billed_amount = Column(Numeric(14, 2), nullable=False)
+    cost = Column(Numeric(14, 2), nullable=False) #Harga Awal
+    amount = Column(Numeric(14, 2), nullable=False) #Jumlah Barang
+    billed_amount = Column(Numeric(14, 2), nullable=False) #Harga+Tax/Markup
     type = Column(
         SQLEnum(ItemType, name="item_type_enum"),
         nullable=False
     )
-    amount_type = Column(String, nullable=False)
+    amount_type = Column(
+        SQLEnum(AmountType, name="item_amount_type_enum"),
+        nullable=True)
     code = Column(String, nullable=False)
     attachments = Column(JSONB, nullable=False, default=list, server_default="[]")
 
@@ -29,18 +43,12 @@ class Item(db.Model, Meta):
         UniqueConstraint("code", name="uq_item_code"),
     )
 
-    expense_id = Column(
-        Integer,
-        ForeignKey("expenses.id"),
-        nullable=True
-    )
     quotation_id = Column(
         Integer,
         ForeignKey("quotations.id"),
         nullable=True
     )
 
-    expense = relationship("Expense", back_populates="items")
     quotation = relationship("Quotation", back_populates="items")
 
     def to_dict(self):
@@ -51,7 +59,7 @@ class Item(db.Model, Meta):
             "amount": float(self.amount),
             "billed_amount": float(self.billed_amount),
             "type": self.type.value if self.type else None,
-            "amount_type": self.amount_type,
+            "amount_type": self.amount_type.value if self.amount_type else None,
             "code": self.code,
             "attachments": self.attachments,
             "meta": {

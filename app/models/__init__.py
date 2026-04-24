@@ -7,8 +7,8 @@ from .quotations import Quotation
 from .purchase_orders import Purchase_Order
 from .invoices import Invoice
 from .payments import Payment
-from .approvals import Approval, ApprovalType
-from .items import Item
+from .approvals import Approval, ApprovalStatus, ApprovalType
+from .items import Item, ItemType, AmountType
 from .expenses import Expense
 from .documents import Document, DocumentType
 from .employees import  Employee, Religion, BloodType, MaritalStatus

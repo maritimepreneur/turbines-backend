@@ -1,10 +1,34 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func, or_, desc, asc
 from app.models.expenses import Expense
+from app.models.approvals import Approval, ApprovalStatus, ApprovalType
 from app.services.base_service import BaseService
 from app.utils import response
 from datetime import date, datetime
-from app.services.approval_service import ApprovalService
+
+def generate_date_prefix():
+    return datetime.now().strftime("%d%m%y")
+
+def generate_running_number(db, model, prefix_field="code", date_prefix=None):
+    last = (
+        db.query(model)
+        .filter(model.code.like(f"%{date_prefix}%"))
+        .order_by(model.id.desc())
+        .first()
+    )
+
+    if not last:
+        return "000001"
+
+    last_code = last.code
+    last_number = int(last_code[-6:])
+    return str(last_number + 1).zfill(6)
+
+def generate_approval_code(db, jenis="QUO", dari="FIN", ke="BD"):
+    date_prefix = generate_date_prefix()
+    running = generate_running_number(db, Approval, date_prefix=date_prefix)
+
+    return f"{jenis}-{dari}-{ke}-{date_prefix}{running}"
 
 class ExpenseService(BaseService):
     def __init__(self, db: Session):
@@ -34,43 +58,54 @@ class ExpenseService(BaseService):
         return response(200, "Success", expenses or [])
     
     def create(self, expense_data: dict):
+
         period_date = expense_data.get("period_date")
 
         if not period_date:
             return response(400, "period_date is required")
-        
+
         try:
             if isinstance(period_date, str):
                 period_date = datetime.strptime(period_date, "%Y-%m-%d").date()
                 expense_data["period_date"] = period_date
         except ValueError:
             return response(400, "Invalid period_date format. Use YYYY-MM-DD")
-        
-        expense_data["code"] = self.generate_code(period_date)
 
-        result = super().create(expense_data)
+        user_id = self.get_user_id_login()
+        if not user_id:
+            return response(401, "Unauthorized")
 
-        
         try:
+            # GENERATE CODE
+            expense_data["code"] = self.generate_code(period_date)
 
-            new_expense_id = result.get('data', {}).get('id')
+            # CREATE EXPENSE
+            expense = Expense(**expense_data)
+            expense.created_by = user_id
+            expense.updated_by = user_id
 
-            if new_expense_id:
-                approval_service = ApprovalService(self.db)
-                approval_payload = {
-                    "entity_type": "Expense",
-                    "expense_id": new_expense_id,
-                    "quotation_id": 0,
-                    "po_id": 0,
-                    "invoice_id": 0
-                }
-                
-                approval_service.create(approval_payload)
-                
+            self.db.add(expense)
+            self.db.flush()  # ambil ID
+
+            # CREATE APPROVAL (WAJIB)
+            approval = Approval(
+                status=ApprovalStatus.PENDING,
+                type=ApprovalType.EXPENSE,
+                code=generate_approval_code(self.db),
+                expense_id=expense.id,
+                created_by=user_id,
+                updated_by=user_id
+            )
+
+            self.db.add(approval)
+
+            self.db.commit()
+
+            return response(201, "Created", expense)
+
         except Exception as e:
-            print(f"Warning: Automatic Approval for Expense failed: {str(e)}")
-
-        return result
+            self.db.rollback()
+            return response(500, str(e))
     
     def get_expense_by_id(self, expense_id):
         """ Get Expense details """
@@ -80,14 +115,49 @@ class ExpenseService(BaseService):
         return super().get_by_id(expense_id)
     
     def update_expense_by_id(self, expense_id, updated_data):
-        """ Update Expense """
+        """ Update Expense + Reset Approval """
+
         expense = self._get_by_id(expense_id)
         if not expense:
-            return response(404, expense_id)
-        
-        updated_data.pop("code", None)
+            return response(404, "Expense not found")
 
-        return super().update(expense_id, updated_data)
+        user_id = self.get_user_id_login()
+        if not user_id:
+            return response(401, "Unauthorized")
+
+        try:
+            # jangan boleh update code
+            updated_data.pop("code", None)
+
+            # update field manual (gantikan super().update)
+            for key, value in updated_data.items():
+                setattr(expense, key, value)
+
+            expense.updated_by = user_id
+
+            # RESET / CREATE APPROVAL
+            if expense.approval:
+                expense.approval.status = ApprovalStatus.PENDING
+                expense.approval.updated_by = user_id
+            else:
+                # fallback kalau approval belum ada
+                approval = Approval(
+                    status=ApprovalStatus.PENDING,
+                    type=ApprovalType.EXPENSE,
+                    code=generate_approval_code(self.db),
+                    expense_id=expense.id,
+                    created_by=user_id,
+                    updated_by=user_id
+                )
+                self.db.add(approval)
+
+            self.db.commit()
+
+            return response(200, "Updated", expense)
+
+        except Exception as e:
+            self.db.rollback()
+            return response(500, str(e))
 
     def get_expense_list_filter(self, payload):
         """NEW: Search, Filter, and Pagination for Expenses"""

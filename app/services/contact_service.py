@@ -112,13 +112,44 @@ class ContactService(BaseService):
         """ Update Contact """
         contact = self._get_by_id(contact_id)
         if not contact:
-            return response(404, contact_id)
+            return response(404, "Contact not found")
 
-        if "emails" in updated_data:
-            contact.emails = list(set(contact.emails + updated_data["emails"]))
+        new_emails = updated_data.get("emails", [])
+        new_phones = updated_data.get("phone_numbers", [])
 
-        if "phone_numbers" in updated_data:
-            contact.phone_numbers = list(set(contact.phone_numbers + updated_data["phone_numbers"]))
+        # Cek duplikat di contact LAIN
+        if new_emails or new_phones:
+            email_conditions = [Contact.emails.contains([e]) for e in new_emails]
+            phone_conditions = [Contact.phone_numbers.contains([p]) for p in new_phones]
+            all_conditions = [c for c in email_conditions + phone_conditions]
+            if all_conditions:
+                existing = (
+                    self.db.query(Contact)
+                    .filter(or_(*all_conditions))
+                    .filter(Contact.id != contact_id)
+                    .first()
+                )
+                if existing:
+                    return response(409, "Email or phone number already used by another contact")
+
+        # Update fields
+        if "name" in updated_data:
+            contact.name = updated_data["name"]
+        if "company" in updated_data:
+            contact.company = updated_data["company"]
+        if "nasionality" in updated_data:
+            contact.nasionality = updated_data["nasionality"]
+        if "role" in updated_data:
+            contact.role = updated_data["role"]
+        if "position" in updated_data:
+            contact.position = updated_data["position"]
+        if new_emails:
+            contact.emails = new_emails
+        if new_phones:
+            contact.phone_numbers = new_phones
+
+        # Gunakan get_user_id_login() langsung, bukan _inject_update_meta
+        contact.updated_by = self.get_user_id_login()
 
         self.db.commit()
         self.db.refresh(contact)

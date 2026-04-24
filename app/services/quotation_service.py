@@ -1,16 +1,65 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_, desc, asc
 from app.models.quotations import Quotation
 from app.models.contacts import Contact
 from app.models.partners import Partner
+from app.models.approvals import Approval, ApprovalStatus, ApprovalType
 from app.models.leads import Lead
+from app.models.items import Item
 from app.services.base_service import BaseService
 from app.utils import response
-from app.services.approval_service import ApprovalService
+from datetime import datetime, date
+
+def generate_date_prefix():
+    return datetime.now().strftime("%d%m%y")
+
+def generate_running_number(db, model, prefix_field="code", date_prefix=None):
+    last = (
+        db.query(model)
+        .filter(model.code.like(f"%{date_prefix}%"))
+        .order_by(model.id.desc())
+        .first()
+    )
+
+    if not last:
+        return "000001"
+
+    last_code = last.code
+    last_number = int(last_code[-6:])
+    return str(last_number + 1).zfill(6)
+
+def generate_approval_code(db, jenis="QUO", dari="FIN", ke="BD"):
+    date_prefix = generate_date_prefix()
+    running = generate_running_number(db, Approval, date_prefix=date_prefix)
+
+    return f"{jenis}-{dari}-{ke}-{date_prefix}{running}"
+
+def generate_item_code(name: str, item_type: str, quotation_id: int, index: int):
+    prefix = "".join((name or "XXX").split())[:3].upper().ljust(3, "X")
+
+    normalized_type = item_type.value if hasattr(item_type, "value") else item_type
+    type_key = str(normalized_type).strip().upper()
+
+    type_map = {
+        "SERVICE": "SVC",
+        "GOODS": "GDS"
+    }
+
+    type_code = type_map.get(type_key, "UNK")
+
+    return f"{prefix}-{type_code}-{quotation_id}-{str(index).zfill(3)}"
 
 class QuotationService(BaseService):
     def __init__(self, db: Session):
         super().__init__(db, Quotation)
+
+    def inject_meta(self, obj):
+        user_id = self.get_user_id_login()
+
+        obj.created_by = user_id
+        obj.updated_by = user_id
+
+        return obj
 
     def get_all_quotations(self):
         """ Get all Quotation """
@@ -18,53 +67,197 @@ class QuotationService(BaseService):
         return response(200, "Success", quotations or [])
     
     def create_quotation(self, quotation_data):
-        self.validate_fk(quotation_data)
-        
-        try:
-            new_quotation = Quotation(**quotation_data)
-            self.db.add(new_quotation)
-            
-            self.db.flush()
-            self.db.refresh(new_quotation)
+        items_data = quotation_data.pop("items", [])
 
-            approval_service = ApprovalService(self.db)
-            approval_payload = {
-                "entity_type": "Quotation",
-                "quotation_id": new_quotation.id,
-                "po_id": 0,
-                "invoice_id": 0,
-                "expense_id": 0,
-                "creator_id": new_quotation.created_by, 
-                "is_internal": True
-            }
-            approval_service.create(approval_payload)
-            
-            result_data = new_quotation.to_dict()
-            
-            self.db.commit()
-            
-            return {"code": 201, "message": "Success", "data": result_data}
+        try:
+            with self.db.begin():
+
+                # VALIDASI FK
+                error = self.validate_fk(quotation_data)
+                if error:
+                    return error
+
+                user_id = self.get_user_id_login()
+                if not user_id:
+                    return response(401, "Unauthorized")
+
+                # CREATE QUOTATION
+                quotation = Quotation(**quotation_data)
+                quotation.created_by = user_id
+                quotation.updated_by = user_id
+
+                self.db.add(quotation)
+                self.db.flush()
+
+                # CREATE ITEMS
+                for i, item_data in enumerate(items_data, start=1):
+                    item = Item(**item_data)
+
+                    item.created_by = user_id
+                    item.updated_by = user_id
+
+                    item.code = generate_item_code(
+                        item.name,
+                        item.type.value if hasattr(item.type, "value") else item.type,
+                        quotation.id,
+                        i
+                    )
+
+                    quotation.items.append(item)
+
+                # CREATE APPROVAL (1:1 ke quotation)
+                approval = Approval(
+                    status=ApprovalStatus.PENDING,
+                    type=ApprovalType.QUOTATION,
+                    code=generate_approval_code(self.db),
+                    quotation_id=quotation.id
+                )
+
+                # Keep approval audit fields aligned with the newly-created quotation.
+                approval.created_by = quotation.created_by
+                approval.updated_by = quotation.updated_by
+
+                self.db.add(approval)
+
+            return response(201, "Created", quotation)
 
         except Exception as e:
-
-            self.db.rollback()
-            print(f"ATOMIC TRANSACTION FAILED (Quotation): {str(e)}")
-            raise e
+            return response(500, str(e))
     
     def get_quotation_by_id(self, quotation_id):
-        """ Get Quotation details """
-        quotation = self._get_by_id(quotation_id)
+        quotation = (
+            self.db.query(Quotation)
+            .options(
+                joinedload(Quotation.items),
+                joinedload(Quotation.approval)
+            )
+            .filter(Quotation.id == quotation_id)
+            .first()
+        )
+
         if not quotation:
-            return response(404, "Quotation not found", None)
-        return super().get_by_id(quotation_id)
+            return response(404, "Quotation not found")
+
+        return response(200, "Success", quotation)
     
     def update_quotation_by_id(self, quotation_id, updated_data):
-        """ Update Quotation """
-        quotation = self._get_by_id(quotation_id)
-        self.validate_fk(updated_data)
-        if not quotation:
-            return response(404, f"Quotation ID {quotation_id} not found")
-        return super().update(quotation_id, updated_data)
+        try:
+            with self.db.begin():
+
+                # GET DATA + LOCK
+                quotation = (
+                    self.db.query(Quotation)
+                    .options(
+                        joinedload(Quotation.items),
+                        joinedload(Quotation.approval)
+                    )
+                    .filter(Quotation.id == quotation_id)
+                    .first()
+                )
+
+                if not quotation:
+                    return response(404, "Quotation not found")
+
+                # VALIDASI FK
+                error = self.validate_fk(updated_data)
+                if error:
+                    return error
+
+                user_id = self.get_user_id_login()
+                if not user_id:
+                    return response(401, "Unauthorized")
+
+                items_data = updated_data.pop("items", [])
+
+                # UPDATE QUOTATION FIELD
+                for key, value in updated_data.items():
+                    setattr(quotation, key, value)
+
+                quotation.updated_by = user_id
+
+                # MAP EXISTING ITEMS
+                existing_items = {item.id: item for item in quotation.items}
+                incoming_ids = []
+                existing_code_indices = []
+
+                for existing_item in quotation.items:
+                    if not existing_item.code:
+                        continue
+                    try:
+                        existing_code_indices.append(
+                            int(str(existing_item.code).rsplit("-", 1)[-1])
+                        )
+                    except (TypeError, ValueError):
+                        continue
+
+                next_item_index = (max(existing_code_indices) + 1) if existing_code_indices else 1
+
+                items_changed = False
+
+                for item_data in items_data:
+
+                    # UPDATE EXISTING
+                    if item_data.get("id"):
+                        item = existing_items.get(item_data["id"])
+
+                        if not item:
+                            return response(404, f"Item {item_data['id']} not found")
+
+                        # detect perubahan
+                        if (
+                            item.name != item_data["name"] or
+                            item.cost != item_data["cost"] or
+                            item.amount != item_data["amount"] or
+                            item.billed_amount != item_data["billed_amount"] or
+                            item.type != item_data["type"] or
+                            item.amount_type != item_data["amount_type"]
+                        ):
+                            items_changed = True
+
+                        item.name = item_data["name"]
+                        item.cost = item_data["cost"]
+                        item.amount = item_data["amount"]
+                        item.billed_amount = item_data["billed_amount"]
+                        item.type = item_data["type"]
+                        item.amount_type = item_data["amount_type"]
+
+                        item.updated_by = user_id
+
+                        incoming_ids.append(item.id)
+
+                    # CREATE NEW ITEM
+                    else:
+                        items_changed = True
+
+                        item = Item(**item_data)
+                        item.created_by = user_id
+                        item.updated_by = user_id
+
+                        item.code = generate_item_code(
+                            item.name,
+                            item.type.value if hasattr(item.type, "value") else item.type,
+                            quotation.id,
+                            next_item_index
+                        )
+                        next_item_index += 1
+
+                        quotation.items.append(item)
+
+                # DELETE ORPHAN
+                for item_id, item in existing_items.items():
+                    if item_id not in incoming_ids:
+                        items_changed = True
+                        self.db.delete(item)
+
+                # APPROVAL RESET
+                if quotation.approval and items_changed:
+                    quotation.approval.status = ApprovalStatus.PENDING
+                    quotation.approval.updated_by = user_id
+
+            return response(200, "Updated", quotation)
+
+        except Exception as e:
+            return response(500, str(e))
     
     def validate_fk(self, quotation_data):
         """ Existing validation logic """
