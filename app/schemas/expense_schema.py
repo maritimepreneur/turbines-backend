@@ -18,6 +18,11 @@ class ExpenseSchema(BaseSchema):
                 required=True
                 ),
                 "notes": fields.String,
+                "approval": fields.Nested(namespace.model("ExpenseApproval", {
+                        "id": fields.Integer,
+                        "code": fields.String,
+                        "status": fields.String(attribute=lambda x: x.status.value if x and x.status else None),
+                })),
                 "meta": fields.Nested(namespace.model("Meta", {
                     "created_at": fields.String(description="ISO 8601 Date"),
                     "updated_at": fields.String(description="ISO 8601 Date"),
