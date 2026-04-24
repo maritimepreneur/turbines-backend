@@ -3,7 +3,7 @@ from flask_jwt_extended import get_jwt_identity
 from datetime import datetime
 from flask import abort
 
-from app.models.approvals import Approval, ApprovalType
+from app.models.approvals import Approval, ApprovalType, ApprovalStatus
 from app.models.users import User
 from app.models.quotations import Quotation
 from app.models.purchase_orders import Purchase_Order
@@ -19,6 +19,12 @@ class ApprovalService:
         "Invoice": "INV",
         "Expense": "EXP"
     }
+    ENTITY_ENUM_MAPPING = {
+        "Quotation": ApprovalType.QUOTATION,
+        "Purchase Order": ApprovalType.PO,
+        "Invoice": ApprovalType.INVOICE,
+        "Expense": ApprovalType.EXPENSE,
+    }
 
     ROLE_MAPPING = {
         "FINANCE": "FIN",
@@ -30,9 +36,11 @@ class ApprovalService:
         self.db = db_session
 
     def create(self, data):
+
         entity_type = data.get("entity_type")
         if not entity_type:
             raise ValueError("entity_type is required")
+
         entity_type = entity_type.title().strip()
 
         if entity_type not in self.ENTITY_MAPPING:
@@ -40,16 +48,33 @@ class ApprovalService:
 
         current_user_id = get_jwt_identity()
         current_user = self.db.query(User).get(current_user_id)
+
         if not current_user:
             raise ValueError("User not found")
 
+        raw_from_role = current_user.role.name.upper()
+
+        if raw_from_role not in self.ROLE_MAPPING:
+            raise ValueError("User role not allowed")
+
+        from_dept = self.ROLE_MAPPING[raw_from_role]
+
         entity_keys = ["quotation_id", "po_id", "invoice_id", "expense_id"]
-        filled = [key for key in entity_keys if data.get(key) and int(data.get(key)) != 0]
-        
+
+        filled = [
+            key for key in entity_keys
+            if data.get(key) and int(data.get(key)) != 0
+        ]
+
         if len(filled) != 1:
             raise ValueError("Exactly one entity ID must be provided")
 
+        for key in entity_keys:
+            if not data.get(key) or int(data.get(key)) == 0:
+                data[key] = None
+
         entity = None
+
         if data.get("quotation_id"):
             entity = self.db.query(Quotation).get(data["quotation_id"])
         elif data.get("po_id"):
@@ -62,36 +87,37 @@ class ApprovalService:
         if not entity:
             raise ValueError("Referenced entity not found")
 
-        creator_id = data.get("creator_id") or entity.created_by
-        creator_user = self.db.query(User).get(creator_id)
+        creator_user = self.db.query(User).get(entity.created_by)
+
         if not creator_user:
             raise ValueError("Creator user not found")
 
-        raw_creator_role = creator_user.role.name.upper()
-        from_dept = self.ROLE_MAPPING.get(raw_creator_role, "STF")
+        raw_to_role = creator_user.role.name.upper()
 
-        is_internal = data.get("is_internal", False)
-        if is_internal:
-            to_dept = "ADM"
-        else:
-            raw_login_role = current_user.role.name.upper()
-            to_dept = self.ROLE_MAPPING.get(raw_login_role, "ADM")
-            
-            if from_dept == to_dept:
-                raise ValueError("Cannot approve within same department")
+        if raw_to_role not in self.ROLE_MAPPING:
+            raise ValueError("Creator role not allowed")
+
+        to_dept = self.ROLE_MAPPING[raw_to_role]
+
+        if from_dept == to_dept:
+            raise ValueError("Cannot approve within same department")
 
         new_code = self.generate_code(entity_type, from_dept, to_dept)
 
         new_approval = Approval(
-            type=ApprovalType.PENDING,
+            status=ApprovalStatus.PENDING,
+            type=self.ENTITY_ENUM_MAPPING[entity_type],
             code=new_code,
-            quotation_id=data.get("quotation_id") if data.get("quotation_id") != 0 else None,
-            po_id=data.get("po_id") if data.get("po_id") != 0 else None,
-            invoice_id=data.get("invoice_id") if data.get("invoice_id") != 0 else None,
-            expense_id=data.get("expense_id") if data.get("expense_id") != 0 else None,
+            quotation_id=data.get("quotation_id"),
+            po_id=data.get("po_id"),
+            invoice_id=data.get("invoice_id"),
+            expense_id=data.get("expense_id"),
         )
+        new_approval.created_by = current_user_id
+        new_approval.updated_by = current_user_id
 
         self.db.add(new_approval)
+        self.db.commit()
 
         return {
             "message": "Approval created successfully",
@@ -180,18 +206,15 @@ class ApprovalService:
         if not approval:
             abort(404, f"Approval ID {approval_id} not found")
 
-        if "type" not in data:
-            raise ValueError("type is required")
+        status_value = data.get("status") or data.get("type")
+        if not status_value:
+            raise ValueError("status is required")
 
         try:
-            status_key = data["type"].upper().strip()
-            approval.type = ApprovalType[status_key]
-            
-            if "notes" in data:
-                approval.notes = data["notes"]
-                
+            approval.status = ApprovalStatus[status_value.upper()]
         except KeyError:
-            raise ValueError(f"Invalid approval status: {data['type']}")
+            raise ValueError("Invalid approval status")
+        approval.updated_by = get_jwt_identity()
 
         self.db.commit()
 
@@ -204,7 +227,7 @@ class ApprovalService:
                 "lead_id": self.extract_lead_id(approval)
             }
         }
-    
+
     def delete(self, approval_id):
 
         approval = self.db.query(Approval).get(approval_id)
@@ -223,11 +246,11 @@ class ApprovalService:
 
     def extract_lead_id(self, approval):
 
-        if approval.quotations:
-            return approval.quotations.lead_id
+        if approval.quotation:
+            return approval.quotation.lead_id
 
-        if approval.purchase_orders and approval.purchase_orders.quotation:
-            return approval.purchase_orders.quotation.lead_id
+        if approval.purchase_order and approval.purchase_order.quotation:
+            return approval.purchase_order.quotation.lead_id
 
         if (
             approval.invoices
@@ -235,13 +258,5 @@ class ApprovalService:
             and approval.invoices.purchase_order.quotation
         ):
             return approval.invoices.purchase_order.quotation.lead_id
-
-        if (
-            approval.expense
-            and approval.expense.invoice
-            and approval.expense.invoice.purchase_order
-            and approval.expense.invoice.purchase_order.quotation
-        ):
-            return approval.expense.invoice.purchase_order.quotation.lead_id
 
         return None
