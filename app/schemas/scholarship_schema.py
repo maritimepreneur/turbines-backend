@@ -37,7 +37,19 @@ class ScholarshipSchema(BaseSchema):
             "original_price": fields.Float(required=True),
             "discount": fields.Integer(required=True)
         }, ordered=True)
-
+    
+    @classmethod
+    def update_schema(cls, namespace: Model):
+        return namespace.model("ScholarshipUpdateRequest", {
+            "name": fields.String(),
+            "date": fields.Date(),
+            "status": fields.String(description="ACTIVE or DEACTIVE"),
+            "type": fields.String(),
+            "category": fields.String(),
+            "original_price": fields.Float(),
+            "discount": fields.Integer()
+        }, ordered=True)
+    
     @classmethod
     def filter_response_schema(cls, namespace: Model):
 

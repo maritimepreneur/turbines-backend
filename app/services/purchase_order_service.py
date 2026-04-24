@@ -1,6 +1,7 @@
 from datetime import datetime
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import desc, asc, or_
+from flask_jwt_extended import get_jwt_identity
 from app.services.base_service import BaseService
 from app.models.purchase_orders import Purchase_Order
 from app.models.partners import Partner
@@ -8,6 +9,7 @@ from app.models.contacts import Contact
 from app.models.quotations import Quotation
 from app.models.approvals import Approval, ApprovalStatus, ApprovalType
 from app.utils import response
+from app.services.approval_service import ApprovalService
 
 class PurchaseOrderService(BaseService):
     def __init__(self, db: Session):

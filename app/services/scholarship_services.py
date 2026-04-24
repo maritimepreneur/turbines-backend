@@ -10,8 +10,23 @@ from app.models.users import User
 class ScholarshipService:
 
     CATEGORY_MAPPING = {
-    "Training Course": "TRN",
-    "Certification": "CRT"
+        "individual": "Individual Member",
+        "corporate": "Corporate Member",
+        "student": "Student Member",
+        "retired": "Retired Member"
+    }
+
+    CATEGORY_CODE_PREFIX = {
+        "individual": "IND",
+        "corporate": "CORP",
+        "student": "STU",
+        "retired": "RET"
+    }
+
+    TYPE_MAPPING = {
+        "partial_a": "Partial Funded A",
+        "partial_b": "Partial Funded B",
+        "fully": "Fully Funded"
     }
 
     def __init__(self, db_session):
@@ -22,12 +37,10 @@ class ScholarshipService:
         if category not in self.CATEGORY_MAPPING:
             raise ValueError("Invalid scholarship category")
 
-        category_code = self.CATEGORY_MAPPING[category]
-
-        today = datetime.now()
-        date_str = today.strftime("%y%m%d")
-
-        prefix = f"SCH-{category_code}-{date_str}-"
+        category_code = self.CATEGORY_CODE_PREFIX.get(category.lower(), "GEN")
+        
+        today = datetime.now().strftime("%y%m%d")
+        prefix = f"SCH-{category_code}-{today}-"
 
         last_scholarship = (
             self.db.query(Scholarship)
@@ -49,22 +62,29 @@ class ScholarshipService:
         return original_price - (original_price * discount / 100)
 
     def create(self, data):
-
         current_user_id = get_jwt_identity()
+        
+        raw_type = data.get("type", "").lower()
+        formatted_type = self.TYPE_MAPPING.get(raw_type, "Partial Funded A")
+        
+        raw_category = data.get("category", "").lower()
+        formatted_category = self.CATEGORY_MAPPING.get(raw_category, "Individual Member")
 
-        code = self.generate_code(data.get("category"))
-
+        code = self.generate_code(raw_category)
+        
         price = self.calculate_price(
-            data.get("original_price"),
-            data.get("discount")
+            data.get("original_price", 0),
+            data.get("discount", 0)
         )
 
         new_scholarship = Scholarship(
             name=data.get("name"),
-            status=ScholarshipStatus.ACTIVE,
+            status=ScholarshipStatus.ACTIVE, 
             date=data.get("date"),
-            type=data.get("type"),
-            category=data.get("category"),
+            
+            type=formatted_type, 
+            category=formatted_category,
+            
             original_price=data.get("original_price"),
             discount=data.get("discount"),
             price=price,
@@ -83,20 +103,25 @@ class ScholarshipService:
         }
 
     def update(self, scholarship_id, data):
-
         scholarship = self.db.query(Scholarship).get(scholarship_id)
-
         if not scholarship:
             abort(404, f"Scholarship ID {scholarship_id} not found")
 
         current_user_id = get_jwt_identity()
 
         for key, value in data.items():
-
             if hasattr(scholarship, key):
-
-                if key == "status":
-                    value = ScholarshipStatus(value)
+                if key == "status" and value:
+                    try:
+                        value = ScholarshipStatus[value.upper()]
+                    except KeyError:
+                        continue
+                
+                elif key == "type" and value:
+                    value = self.TYPE_MAPPING.get(value.lower(), value)
+                
+                elif key == "category" and value:
+                    value = self.CATEGORY_MAPPING.get(value.lower(), value)
 
                 setattr(scholarship, key, value)
 
@@ -106,8 +131,9 @@ class ScholarshipService:
         )
 
         scholarship.updated_by = current_user_id
-
         self.db.commit()
+        
+        self.db.refresh(scholarship)
 
         return {
             "message": "Scholarship updated successfully",
@@ -115,29 +141,9 @@ class ScholarshipService:
             "status": "success",
             "data": scholarship.to_dict()
         }
-
-    def update_expired_scholarships(self):
-
-        today = datetime.today()
-
-        expired = (
-            self.db.query(Scholarship)
-            .filter(
-                Scholarship.date < today,
-                Scholarship.status == ScholarshipStatus.ACTIVE
-            )
-            .all()
-        )
-
-        for scholarship in expired:
-            scholarship.status = ScholarshipStatus.DEACTIVE
-
-        if expired:
-            self.db.commit()
-
+    
     def get_all(self, payload):
 
-        self.update_expired_scholarships()
         page_size = payload.get("page_size", 25)
         page_number = payload.get("page_number", 1)
         search = payload.get("search", "")
@@ -191,8 +197,6 @@ class ScholarshipService:
         }
 
     def get_by_id(self, scholarship_id):
-
-        self.update_expired_scholarships()
 
         scholarship = self.db.query(Scholarship).get(scholarship_id)
 
