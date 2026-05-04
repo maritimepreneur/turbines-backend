@@ -142,6 +142,10 @@ class ScholarshipService:
             "data": scholarship.to_dict()
         }
     
+    def get_all_simple(self):
+        """ Get all Scholarship (Simple List) """
+        return self.db.query(Scholarship).all()
+
     def get_all(self, payload):
 
         page_size = payload.get("page_size", 25)
@@ -149,6 +153,9 @@ class ScholarshipService:
         search = payload.get("search", "")
         status = payload.get("status")
         category = payload.get("category")
+        scholarship_type = payload.get("type")
+        min_price = payload.get("min_price")
+        max_price = payload.get("max_price")
         sort_by = payload.get("sort_by", "id")
         sort_order = payload.get("sort_order", "DESC")
 
@@ -159,6 +166,8 @@ class ScholarshipService:
                 or_(
                     Scholarship.name.ilike(f"%{search}%"),
                     Scholarship.code.ilike(f"%{search}%"),
+                    Scholarship.type.ilike(f"%{search}%"),
+                    Scholarship.category.ilike(f"%{search}%"),
                 )
             )
 
@@ -166,7 +175,16 @@ class ScholarshipService:
             query = query.filter(Scholarship.status == status)
 
         if category:
-            query = query.filter(Scholarship.category == category)
+            query = query.filter(Scholarship.category.ilike(f"%{category}%"))
+
+        if scholarship_type:
+            query = query.filter(Scholarship.type.ilike(f"%{scholarship_type}%"))
+
+        if min_price is not None:
+            query = query.filter(Scholarship.price >= min_price)
+
+        if max_price is not None:
+            query = query.filter(Scholarship.price <= max_price)
 
         sort_column = getattr(Scholarship, sort_by) if hasattr(Scholarship, sort_by) else Scholarship.id
 
