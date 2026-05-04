@@ -6,29 +6,6 @@ from app.services.base_service import BaseService
 from app.utils import response
 from datetime import date, datetime
 
-def generate_date_prefix():
-    return datetime.now().strftime("%d%m%y")
-
-def generate_running_number(db, model, prefix_field="code", date_prefix=None):
-    last = (
-        db.query(model)
-        .filter(model.code.like(f"%{date_prefix}%"))
-        .order_by(model.id.desc())
-        .first()
-    )
-
-    if not last:
-        return "000001"
-
-    last_code = last.code
-    last_number = int(last_code[-6:])
-    return str(last_number + 1).zfill(6)
-
-def generate_approval_code(db, jenis="QUO", dari="FIN", ke="BD"):
-    date_prefix = generate_date_prefix()
-    running = generate_running_number(db, Approval, date_prefix=date_prefix)
-
-    return f"{jenis}-{dari}-{ke}-{date_prefix}{running}"
 
 class ExpenseService(BaseService):
     def __init__(self, db: Session):
@@ -87,17 +64,14 @@ class ExpenseService(BaseService):
             self.db.add(expense)
             self.db.flush()  # ambil ID
 
-            # CREATE APPROVAL (WAJIB)
-            approval = Approval(
-                status=ApprovalStatus.PENDING,
-                type=ApprovalType.EXPENSE,
-                code=generate_approval_code(self.db),
-                expense_id=expense.id,
-                created_by=user_id,
-                updated_by=user_id
-            )
-
-            self.db.add(approval)
+            # CREATE APPROVAL (WAJIB) disini yak
+            from app.services.approval_service import ApprovalService
+            approval_service = ApprovalService(self.db)
+            approval_data = {
+                "entity_type": "Expense",
+                "expense_id": expense.id
+            }
+            approval_service.create_internal(approval_data, user_id)
 
             self.db.commit()
 
@@ -141,15 +115,13 @@ class ExpenseService(BaseService):
                 expense.approval.updated_by = user_id
             else:
                 # fallback kalau approval belum ada
-                approval = Approval(
-                    status=ApprovalStatus.PENDING,
-                    type=ApprovalType.EXPENSE,
-                    code=generate_approval_code(self.db),
-                    expense_id=expense.id,
-                    created_by=user_id,
-                    updated_by=user_id
-                )
-                self.db.add(approval)
+                from app.services.approval_service import ApprovalService
+                approval_service = ApprovalService(self.db)
+                approval_data = {
+                    "entity_type": "Expense",
+                    "expense_id": expense.id
+                }
+                approval_service.create_internal(approval_data, user_id)
 
             self.db.commit()
 

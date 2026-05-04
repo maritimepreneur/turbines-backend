@@ -10,29 +10,6 @@ from app.services.base_service import BaseService
 from app.utils import response
 from datetime import datetime, date
 
-def generate_date_prefix():
-    return datetime.now().strftime("%d%m%y")
-
-def generate_running_number(db, model, prefix_field="code", date_prefix=None):
-    last = (
-        db.query(model)
-        .filter(model.code.like(f"%{date_prefix}%"))
-        .order_by(model.id.desc())
-        .first()
-    )
-
-    if not last:
-        return "000001"
-
-    last_code = last.code
-    last_number = int(last_code[-6:])
-    return str(last_number + 1).zfill(6)
-
-def generate_approval_code(db, jenis="QUO", dari="FIN", ke="BD"):
-    date_prefix = generate_date_prefix()
-    running = generate_running_number(db, Approval, date_prefix=date_prefix)
-
-    return f"{jenis}-{dari}-{ke}-{date_prefix}{running}"
 
 def generate_item_code(name: str, item_type: str, quotation_id: int, index: int):
     prefix = "".join((name or "XXX").split())[:3].upper().ljust(3, "X")
@@ -106,18 +83,13 @@ class QuotationService(BaseService):
                     quotation.items.append(item)
 
                 # CREATE APPROVAL (1:1 ke quotation)
-                approval = Approval(
-                    status=ApprovalStatus.PENDING,
-                    type=ApprovalType.QUOTATION,
-                    code=generate_approval_code(self.db),
-                    quotation_id=quotation.id
-                )
-
-                # Keep approval audit fields aligned with the newly-created quotation.
-                approval.created_by = quotation.created_by
-                approval.updated_by = quotation.updated_by
-
-                self.db.add(approval)
+                from app.services.approval_service import ApprovalService
+                approval_service = ApprovalService(self.db)
+                approval_data = {
+                    "entity_type": "Quotation",
+                    "quotation_id": quotation.id
+                }
+                approval_service.create_internal(approval_data, user_id)
 
             return response(201, "Created", quotation)
 
