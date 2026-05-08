@@ -1,9 +1,11 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func, or_, desc, asc
 from app.models.expenses import Expense
+from app.models.approvals import Approval, ApprovalStatus, ApprovalType
 from app.services.base_service import BaseService
 from app.utils import response
 from datetime import date, datetime
+
 
 class ExpenseService(BaseService):
     def __init__(self, db: Session):
@@ -33,22 +35,51 @@ class ExpenseService(BaseService):
         return response(200, "Success", expenses or [])
     
     def create(self, expense_data: dict):
-        """ Create a new Expense """
+
         period_date = expense_data.get("period_date")
 
         if not period_date:
             return response(400, "period_date is required")
-        
+
         try:
             if isinstance(period_date, str):
                 period_date = datetime.strptime(period_date, "%Y-%m-%d").date()
                 expense_data["period_date"] = period_date
         except ValueError:
             return response(400, "Invalid period_date format. Use YYYY-MM-DD")
-        
-        expense_data["code"] = self.generate_code(period_date)
 
-        return super().create(expense_data)
+        user_id = self.get_user_id_login()
+        if not user_id:
+            return response(401, "Unauthorized")
+
+        try:
+            # GENERATE CODE
+            expense_data["code"] = self.generate_code(period_date)
+
+            # CREATE EXPENSE
+            expense = Expense(**expense_data)
+            expense.created_by = user_id
+            expense.updated_by = user_id
+
+            self.db.add(expense)
+            self.db.flush()  # ambil ID
+
+            # CREATE APPROVAL (WAJIB) disini yak
+            from app.services.approval_service import ApprovalService
+            approval_service = ApprovalService(self.db)
+            approval_data = {
+                "entity_type": "Expense",
+                "expense_id": expense.id
+            }
+            approval_service.create_internal(approval_data, user_id)
+
+            self.db.commit()
+
+            return response(201, "Created", expense)
+
+        except Exception as e:
+            self.db.rollback()
+            return response(500, str(e))
     
     def get_expense_by_id(self, expense_id):
         """ Get Expense details """
@@ -58,14 +89,47 @@ class ExpenseService(BaseService):
         return super().get_by_id(expense_id)
     
     def update_expense_by_id(self, expense_id, updated_data):
-        """ Update Expense """
+        """ Update Expense + Reset Approval """
+
         expense = self._get_by_id(expense_id)
         if not expense:
-            return response(404, expense_id)
-        
-        updated_data.pop("code", None)
+            return response(404, "Expense not found")
 
-        return super().update(expense_id, updated_data)
+        user_id = self.get_user_id_login()
+        if not user_id:
+            return response(401, "Unauthorized")
+
+        try:
+            # jangan boleh update code
+            updated_data.pop("code", None)
+
+            # update field manual (gantikan super().update)
+            for key, value in updated_data.items():
+                setattr(expense, key, value)
+
+            expense.updated_by = user_id
+
+            # RESET / CREATE APPROVAL
+            if expense.approval:
+                expense.approval.status = ApprovalStatus.PENDING
+                expense.approval.updated_by = user_id
+            else:
+                # fallback kalau approval belum ada
+                from app.services.approval_service import ApprovalService
+                approval_service = ApprovalService(self.db)
+                approval_data = {
+                    "entity_type": "Expense",
+                    "expense_id": expense.id
+                }
+                approval_service.create_internal(approval_data, user_id)
+
+            self.db.commit()
+
+            return response(200, "Updated", expense)
+
+        except Exception as e:
+            self.db.rollback()
+            return response(500, str(e))
 
     def get_expense_list_filter(self, payload):
         """NEW: Search, Filter, and Pagination for Expenses"""

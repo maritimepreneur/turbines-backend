@@ -35,8 +35,24 @@ class ApprovalService:
     def __init__(self, db_session):
         self.db = db_session
 
+    def get_department_by_user(self, user):
+        if not user or not user.role:
+            return None
+        
+        raw_role = user.role.name.upper()
+        return self.ROLE_MAPPING.get(raw_role)
+
     def create(self, data):
 
+        entity_type = data.get("entity_type")
+        if not entity_type:
+            raise ValueError("entity_type is required")
+
+        current_user_id = get_jwt_identity()
+        
+        return self.create_internal(data, current_user_id)
+
+    def create_internal(self, data, user_id):
         entity_type = data.get("entity_type")
         if not entity_type:
             raise ValueError("entity_type is required")
@@ -46,18 +62,14 @@ class ApprovalService:
         if entity_type not in self.ENTITY_MAPPING:
             raise ValueError("Invalid entity_type")
 
-        current_user_id = get_jwt_identity()
-        current_user = self.db.query(User).get(current_user_id)
+        current_user = self.db.query(User).get(user_id)
 
         if not current_user:
             raise ValueError("User not found")
 
-        raw_from_role = current_user.role.name.upper()
-
-        if raw_from_role not in self.ROLE_MAPPING:
-            raise ValueError("User role not allowed")
-
-        from_dept = self.ROLE_MAPPING[raw_from_role]
+        from_dept = self.get_department_by_user(current_user)
+        if not from_dept:
+            raise ValueError("User role not allowed or department mapping missing")
 
         entity_keys = ["quotation_id", "po_id", "invoice_id", "expense_id"]
 
@@ -100,7 +112,10 @@ class ApprovalService:
         to_dept = self.ROLE_MAPPING[raw_to_role]
 
         if from_dept == to_dept:
-            raise ValueError("Cannot approve within same department")
+            if to_dept != 'FIN':
+                from_dept = 'FIN'
+            else:
+                from_dept = 'BD'
 
         new_code = self.generate_code(entity_type, from_dept, to_dept)
 
@@ -113,11 +128,11 @@ class ApprovalService:
             invoice_id=data.get("invoice_id"),
             expense_id=data.get("expense_id"),
         )
-        new_approval.created_by = current_user_id
-        new_approval.updated_by = current_user_id
+        new_approval.created_by = user_id
+        new_approval.updated_by = user_id
 
         self.db.add(new_approval)
-        self.db.commit()
+        self.db.flush() 
 
         return {
             "message": "Approval created successfully",
@@ -154,7 +169,7 @@ class ApprovalService:
     def get_all(self, page=1, per_page=10):
 
         pagination = (
-            self.db.query(Approval)
+            Approval.query
             .order_by(desc(Approval.id))
             .paginate(page=page, per_page=per_page, error_out=False)
         )
@@ -200,22 +215,36 @@ class ApprovalService:
         }
 
     def update(self, approval_id, data):
-
         approval = self.db.query(Approval).get(approval_id)
 
         if not approval:
             abort(404, f"Approval ID {approval_id} not found")
 
-        status_value = data.get("status") or data.get("type")
+        status_value = data.get("status")
         if not status_value:
             raise ValueError("status is required")
 
         try:
-            approval.status = ApprovalStatus[status_value.upper()]
+            new_status = ApprovalStatus[status_value.upper()]
+            approval.status = new_status
         except KeyError:
-            raise ValueError("Invalid approval status")
-        approval.updated_by = get_jwt_identity()
+            raise ValueError(f"Invalid approval status. Available: {[s.name for s in ApprovalStatus]}")
 
+        entity = None
+        if approval.quotation: entity = approval.quotation
+        elif approval.purchase_order: entity = approval.purchase_order
+        elif approval.invoice: entity = approval.invoice
+        elif approval.expense: entity = approval.expense
+
+        if entity and hasattr(entity, 'status'):
+            try:
+                entity_status_enum = type(entity.status)
+                if hasattr(entity_status_enum, new_status.name):
+                    entity.status = entity_status_enum[new_status.name]
+            except:
+                pass 
+
+        approval.updated_by = get_jwt_identity()
         self.db.commit()
 
         return {
@@ -249,14 +278,14 @@ class ApprovalService:
         if approval.quotation:
             return approval.quotation.lead_id
 
-        if approval.purchase_orders and approval.purchase_orders.quotation:
-            return approval.purchase_orders.quotation.lead_id
+        if approval.purchase_order and approval.purchase_order.quotation:
+            return approval.purchase_order.quotation.lead_id
 
         if (
-            approval.invoices
-            and approval.invoices.purchase_order
-            and approval.invoices.purchase_order.quotation
+            approval.invoice
+            and approval.invoice.purchase_order
+            and approval.invoice.purchase_order.quotation
         ):
-            return approval.invoices.purchase_order.quotation.lead_id
+            return approval.invoice.purchase_order.quotation.lead_id
 
         return None

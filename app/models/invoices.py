@@ -41,14 +41,15 @@ class Invoice(db.Model, Meta):
     purchase_order_id = Column(
         Integer,
         ForeignKey("purchase_orders.id"),
-        nullable=True
+        nullable=True,
+        unique=True
     )
 
     contact = relationship("Contact", back_populates="invoices")
     partner = relationship("Partner", back_populates="invoices")
-    purchase_order = relationship("Purchase_Order", back_populates="invoices")
+    purchase_order = relationship("Purchase_Order", back_populates="invoice")
     payments = relationship("Payment", back_populates="invoice")
-    approvals = relationship("Approval", back_populates="invoices")
+    approval = relationship("Approval", back_populates="invoice", uselist=False, cascade="all, delete-orphan")
     projects = relationship("Project", back_populates="invoices")
 
     def to_dict(self):
@@ -71,6 +72,7 @@ class Invoice(db.Model, Meta):
             "contact_id": self.contact_id,
             "partner_id": self.partner_id,
             "purchase_order_id": self.purchase_order_id,
+            "approval": self.approval.to_dict() if self.approval else None,
             "meta": {
                 "created_at": self.created_at.isoformat() if self.created_at else None,
                 "updated_at": self.updated_at.isoformat() if self.updated_at else None,
