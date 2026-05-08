@@ -68,16 +68,14 @@ class PurchaseOrderService(BaseService):
             self.db.add(purchase_order)
             self.db.flush()
 
-            approval = Approval(
-                status=ApprovalStatus.PENDING,
-                type=ApprovalType.PO,
-                code=self.generate_po_approval_code(),
-                po_id=purchase_order.id,
-            )
-            approval.created_by = user_id
-            approval.updated_by = user_id
+            # Create Approval using unified ApprovalService
+            approval_service = ApprovalService(self.db)
+            approval_data = {
+                "entity_type": "Purchase Order",
+                "po_id": purchase_order.id
+            }
+            approval_service.create_internal(approval_data, user_id)
 
-            self.db.add(approval)
             self.db.commit()
             self.db.refresh(purchase_order)
 
@@ -135,24 +133,6 @@ class PurchaseOrderService(BaseService):
                 new_increment = 1
 
         return f"{prefix}{new_increment:06d}"
-
-    def generate_po_approval_code(self):
-        date_prefix = datetime.now().strftime("%d%m%y")
-        last = (
-            self.db.query(Approval)
-            .filter(Approval.code.like(f"%{date_prefix}%"))
-            .order_by(desc(Approval.id))
-            .first()
-        )
-
-        running_number = 1
-        if last and last.code:
-            try:
-                running_number = int(last.code[-6:]) + 1
-            except ValueError:
-                running_number = 1
-
-        return f"PO-FIN-BD-{date_prefix}{running_number:06d}"
 
     def update_purchase(self, id, data):
         data.pop("number", None)

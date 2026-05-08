@@ -72,6 +72,7 @@ class Invoice(db.Model, Meta):
             "contact_id": self.contact_id,
             "partner_id": self.partner_id,
             "purchase_order_id": self.purchase_order_id,
+            "approval": self.approval.to_dict() if self.approval else None,
             "meta": {
                 "created_at": self.created_at.isoformat() if self.created_at else None,
                 "updated_at": self.updated_at.isoformat() if self.updated_at else None,

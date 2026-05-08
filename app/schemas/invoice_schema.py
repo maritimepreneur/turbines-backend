@@ -35,6 +35,12 @@ class InvoiceSchema(BaseSchema):
                     "id": fields.Integer,
                     "po_number": fields.String(attribute="number"),
                 }), allow_null=True),
+                "approval": fields.Nested(namespace.model("InvoiceApproval", {
+                    "id": fields.Integer,
+                    "code": fields.String,
+                    "status": fields.String(attribute=lambda x: x.status.value if x and x.status else None),
+                    "type": fields.String(attribute=lambda x: x.type.value if x and x.type else None),
+                }), allow_null=True),
                 "meta": fields.Nested(namespace.model("Meta", {
                     "created_at": fields.String(description="ISO 8601 Date"),
                     "updated_at": fields.String(description="ISO 8601 Date"),
