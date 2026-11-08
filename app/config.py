@@ -21,7 +21,6 @@ class Config:
     # Database
     SQLALCHEMY_DATABASE_URI = get_database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    PROPAGATE_EXCEPTIONS = True
 
     # Security
     SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
