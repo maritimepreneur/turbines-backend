@@ -15,9 +15,39 @@ class PartnerService(BaseService):
         partners = self.db.query(Partner).all()
         return response(200, "Success", partners or [])
 
+    def _normalize_partner_data(self, data):
+        if not isinstance(data, dict):
+            return data
+        
+        # Normalize company_type
+        if "company_type" in data and isinstance(data["company_type"], str):
+            clean = data["company_type"].upper().replace(" ", "").replace("_", "").replace("-", "")
+            if clean in ["GOVERNMENT", "GOVERMENT"]:
+                data["company_type"] = "GOVERMENT"
+            elif clean in ["STATEOWNED", "STATE_OWNED"]:
+                data["company_type"] = "STATEOWNED"
+            elif clean in ["NONPROFIT", "NON_PROFIT"]:
+                data["company_type"] = "NONPROFIT"
+            elif clean in ["PRIVATE", "PUBLIC", "OTHER"]:
+                data["company_type"] = clean
+
+        # Normalize partner_type
+        if "partner_type" in data and isinstance(data["partner_type"], str):
+            clean = data["partner_type"].upper().strip()
+            if clean in ["VENDOR", "CLIENT", "BOTH", "UNCATEGORIZED", "UNCATEGORIED"]:
+                data["partner_type"] = clean
+
+        return data
+
     def create(self, partner_data):
         """ Register a new Partner """
+        partner_data = self._normalize_partner_data(partner_data)
         return super().create(partner_data)
+
+    def update(self, obj_id, data: dict):
+        """ Update Partner """
+        data = self._normalize_partner_data(data)
+        return super().update(obj_id, data)
 
     def get_partner_by_id(self, partner_id):
         """ Get Partner details """
