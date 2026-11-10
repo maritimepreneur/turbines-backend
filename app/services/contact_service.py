@@ -21,89 +21,133 @@ class ContactService(BaseService):
         )
         return response(200, "Success", contacts)
 
-    def create(self, contact_data):
-        """ Register a new contact """
-        partner_ids = contact_data.pop("partner_ids", [])
-        legacy_partner_id = contact_data.pop("partner_id", None)
-        if legacy_partner_id not in (None, 0, "0"):
-            partner_ids = [*partner_ids, legacy_partner_id] if isinstance(partner_ids, list) else [partner_ids, legacy_partner_id]
+    def _parse_partner_ids(self, data):
+        """Extract and normalize partner_id / partner_ids from payload."""
+        has_partner_field = ("partner_ids" in data) or ("partner_id" in data)
+        raw_partner_ids = data.pop("partner_ids", None)
+        legacy_partner_id = data.pop("partner_id", None)
 
-        if partner_ids is None:
-            partner_ids = []
-        elif isinstance(partner_ids, int):
-            partner_ids = [partner_ids]
-        elif not isinstance(partner_ids, list):
-            return response(400, "Partner ids must be integer or list of integers")
+        if not has_partner_field:
+            return None, None
 
-        normalized_partner_ids = []
-        for partner_id in partner_ids:
-            if partner_id in (None, 0, "0"):
+        combined = []
+        if raw_partner_ids is not None:
+            if isinstance(raw_partner_ids, int):
+                combined.append(raw_partner_ids)
+            elif isinstance(raw_partner_ids, list):
+                combined.extend(raw_partner_ids)
+            else:
+                return None, response(400, "Partner ids must be integer or list of integers")
+
+        if legacy_partner_id not in (None, 0, "0", ""):
+            combined.append(legacy_partner_id)
+
+        normalized_ids = []
+        for pid in combined:
+            if pid in (None, 0, "0", ""):
                 continue
             try:
-                parsed_partner_id = int(partner_id)
+                parsed_id = int(pid)
             except (TypeError, ValueError):
-                return response(400, "Each partner id must be an integer")
-            if parsed_partner_id not in normalized_partner_ids:
-                normalized_partner_ids.append(parsed_partner_id)
+                return None, response(400, "Each partner id must be an integer")
+            if parsed_id not in normalized_ids:
+                normalized_ids.append(parsed_id)
 
-        emails = contact_data.get("emails")
-        phones = contact_data.get("phone_numbers")
-        company = contact_data.get("company")
-
-        if not company:
-            return response(400, "company is required")
-
-        if not isinstance(emails, list) or not isinstance(phones, list):
-            return response(400, "emails and phone_numbers must be list")
-
-        email_conditions = [Contact.emails.contains([e]) for e in emails]
-        phone_conditions = [Contact.phone_numbers.contains([p]) for p in phones]
-
-        existing = self.db.query(Contact).filter(
-            or_(*email_conditions, *phone_conditions)
-        ).first()
-
-        if existing:
-            return response(409, "Contact with the same email or phone number already exists")
-
-        if normalized_partner_ids:
+        if normalized_ids:
             existing_partner_ids = {
                 row[0]
-                for row in self.db.query(Partner.id).filter(Partner.id.in_(normalized_partner_ids)).all()
+                for row in self.db.query(Partner.id).filter(Partner.id.in_(normalized_ids)).all()
             }
-            missing_partner_ids = sorted(set(normalized_partner_ids) - existing_partner_ids)
-            if missing_partner_ids:
-                return response(404, f"Partner not found: {missing_partner_ids}")
+            missing_ids = sorted(set(normalized_ids) - existing_partner_ids)
+            if missing_ids:
+                return None, response(404, f"Partner not found: {missing_ids}")
 
-        contact_data["partner_id"] = normalized_partner_ids[0] if normalized_partner_ids else None
+        return normalized_ids, None
 
-        data = self._inject_create_meta(contact_data)
-        new_contact = Contact(**data)
-        self.db.add(new_contact)
-        self.db.flush()
+    def _sync_contact_partners(self, contact, partner_ids, user_id):
+        """Synchronize contact.partner_id and contact_partners junction rows."""
+        contact.partner_id = partner_ids[0] if partner_ids else None
+        self.db.query(ContactPartner).filter(ContactPartner.contact_id == contact.id).delete()
+        for partner_id in partner_ids:
+            cp = ContactPartner()
+            cp.contact_id = contact.id
+            cp.partner_id = partner_id
+            cp.created_by = user_id
+            cp.updated_by = user_id
+            self.db.add(cp)
 
-        for partner_id in normalized_partner_ids:
-            self.db.add(
-                ContactPartner(
-                    contact_id=new_contact.id,
-                    partner_id=partner_id,
-                    created_by=data.get("created_by"),
-                    updated_by=data.get("updated_by"),
-                )
+    def _check_duplicate_contact(self, emails, phone_numbers, exclude_contact_id=None):
+        """Return conflict response if email or phone already exists on another contact."""
+        email_conditions = [Contact.emails.contains([e]) for e in emails if e]
+        phone_conditions = [Contact.phone_numbers.contains([p]) for p in phone_numbers if p]
+        all_conditions = email_conditions + phone_conditions
+        if not all_conditions:
+            return None
+
+        query = self.db.query(Contact).filter(or_(*all_conditions))
+        if exclude_contact_id is not None:
+            query = query.filter(Contact.id != exclude_contact_id)
+
+        if query.first():
+            msg = (
+                "Email or phone number already used by another contact"
+                if exclude_contact_id is not None
+                else "Contact with the same email or phone number already exists"
             )
+            return response(409, msg)
+        return None
 
-        self.db.commit()
-        self.db.refresh(new_contact)
-        return response(201, "Action Success", new_contact)
-
-    def get_contact_by_id(self, contact_id):
-        """ Get Contact details """
-        contact = (
+    def _load_contact_with_partners(self, contact_id):
+        """Fetch contact with joined contact_partners and partner details."""
+        return (
             self.db.query(Contact)
             .options(joinedload(Contact.contact_partners).joinedload(ContactPartner.partner))
             .filter(Contact.id == contact_id)
             .first()
         )
+
+    def create(self, contact_data):
+        """ Register a new contact """
+        payload = dict(contact_data or {})
+        normalized_partner_ids, err_resp = self._parse_partner_ids(payload)
+        if err_resp:
+            return err_resp
+        normalized_partner_ids = normalized_partner_ids or []
+
+        emails = payload.get("emails")
+        phones = payload.get("phone_numbers")
+        if not isinstance(emails, list) or not isinstance(phones, list):
+            return response(400, "emails and phone_numbers must be list")
+
+        company = (payload.get("company") or "").strip()
+        if not company:
+            if normalized_partner_ids:
+                first_partner = self.db.query(Partner).filter(Partner.id == normalized_partner_ids[0]).first()
+                company = first_partner.name if first_partner else "-"
+            else:
+                company = "-"
+        payload["company"] = company
+
+        dup_resp = self._check_duplicate_contact(emails, phones)
+        if dup_resp:
+            return dup_resp
+
+        payload["partner_id"] = normalized_partner_ids[0] if normalized_partner_ids else None
+
+        data = self._inject_create_meta(payload)
+        new_contact = Contact(**data)
+        self.db.add(new_contact)
+        self.db.flush()
+
+        self._sync_contact_partners(new_contact, normalized_partner_ids, data.get("created_by"))
+
+        self.db.commit()
+        created_contact = self._load_contact_with_partners(new_contact.id)
+        return response(201, "Action Success", created_contact)
+
+    def get_contact_by_id(self, contact_id):
+        """ Get Contact details """
+        contact = self._load_contact_with_partners(contact_id)
         if not contact:
             return response(404, "Contact not found")
         return response(200, "Success", contact)
@@ -114,46 +158,50 @@ class ContactService(BaseService):
         if not contact:
             return response(404, "Contact not found")
 
-        new_emails = updated_data.get("emails", [])
-        new_phones = updated_data.get("phone_numbers", [])
+        payload = dict(updated_data or {})
+        normalized_partner_ids, err_resp = self._parse_partner_ids(payload)
+        if err_resp:
+            return err_resp
 
-        # Cek duplikat di contact LAIN
-        if new_emails or new_phones:
-            email_conditions = [Contact.emails.contains([e]) for e in new_emails]
-            phone_conditions = [Contact.phone_numbers.contains([p]) for p in new_phones]
-            all_conditions = [c for c in email_conditions + phone_conditions]
-            if all_conditions:
-                existing = (
-                    self.db.query(Contact)
-                    .filter(or_(*all_conditions))
-                    .filter(Contact.id != contact_id)
-                    .first()
-                )
-                if existing:
-                    return response(409, "Email or phone number already used by another contact")
+        has_emails = "emails" in payload
+        has_phones = "phone_numbers" in payload
+        new_emails = payload.get("emails", []) if has_emails else []
+        new_phones = payload.get("phone_numbers", []) if has_phones else []
 
-        # Update fields
-        if "name" in updated_data:
-            contact.name = updated_data["name"]
-        if "company" in updated_data:
-            contact.company = updated_data["company"]
-        if "nasionality" in updated_data:
-            contact.nasionality = updated_data["nasionality"]
-        if "role" in updated_data:
-            contact.role = updated_data["role"]
-        if "position" in updated_data:
-            contact.position = updated_data["position"]
-        if new_emails:
+        if has_emails and not isinstance(new_emails, list):
+            return response(400, "emails must be list")
+        if has_phones and not isinstance(new_phones, list):
+            return response(400, "phone_numbers must be list")
+
+        dup_resp = self._check_duplicate_contact(new_emails, new_phones, exclude_contact_id=contact_id)
+        if dup_resp:
+            return dup_resp
+
+        if "name" in payload:
+            contact.name = payload["name"]
+        if "company" in payload:
+            contact.company = (payload["company"] or "").strip() or "-"
+        if "nasionality" in payload:
+            contact.nasionality = payload["nasionality"]
+        if "role" in payload:
+            contact.role = payload["role"]
+        if "position" in payload:
+            contact.position = payload["position"]
+        if has_emails:
             contact.emails = new_emails
-        if new_phones:
+        if has_phones:
             contact.phone_numbers = new_phones
 
-        # Gunakan get_user_id_login() langsung, bukan _inject_update_meta
-        contact.updated_by = self.get_user_id_login()
+        user_id = self.get_user_id_login()
+        if normalized_partner_ids is not None:
+            self._sync_contact_partners(contact, normalized_partner_ids, user_id)
+
+        contact.updated_by = user_id
 
         self.db.commit()
-        self.db.refresh(contact)
-        return response(200, "Action Success", contact)
+        self.db.expire(contact)
+        updated_contact = self._load_contact_with_partners(contact_id)
+        return response(200, "Action Success", updated_contact)
 
     def get_contact_list_filter(self, payload):
         try:
